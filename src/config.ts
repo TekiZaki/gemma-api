@@ -99,8 +99,9 @@ export class PromptManager {
 
     let searchContext = "";
     if (selectedSearch === "BUN")
-      searchContext =
-        "- You MUST use 'bun_search' for any real-time factual queries.";
+      searchContext =`
+        - You are in BROWSER MODE.
+        - If 'scrape_url' fails or returns "JavaScript is disabled", you MUST immediately use \`bun-search "<URL>" --scrape\` to deep-scrape any web page for ground-truth data.`;
     if (selectedSearch === "FIRECRAWL")
       searchContext =
         "- You MUST use 'firecrawl_search' for any deep web research or markdown data extraction.";
@@ -124,6 +125,7 @@ CORE RESEARCH PROTOCOL:
 URGENT RULES:
 - The date/time provided above is your ACTUAL REALITY. Treat years like 2024-2026 as the present.
 - Be direct and concise. Use minimal formatting unless detail is explicitly requested.
+- If a page is blocked or requires a browser environment, use \`bun-search "<URL>" --scrape\` to deep-scrape any web page for ground-truth data.
 - If 'bun_search' returns technical logs or empty results, try alternative search queries immediately.
 `;
   }

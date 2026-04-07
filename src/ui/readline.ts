@@ -1,9 +1,6 @@
 import * as readline from "node:readline";
 import { AMBER, DIM, RESET } from "./theme";
-
-function getVisibleLength(str: string): number {
-  return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").length;
-}
+import { getVisibleLength } from "./components";
 
 const COMPLETIONS = [
   "/help", "/reset", "/model", "/save", "/load",
@@ -29,38 +26,32 @@ export async function readLineWithHint(prompt: string): Promise<string> {
       const fullContent = `${prompt}${buf}${DIM}${hint}${RESET}`;
 
       // 1. Move cursor back to the start of the prompt block
+      // We calculate height of previous render to know how far to move up
       if (lastRelativeCursorRow > 0) {
         readline.moveCursor(process.stdout, 0, -lastRelativeCursorRow);
       }
       readline.cursorTo(process.stdout, 0);
 
-      // 2. Clear everything from that point down to erase previous prompt
+      // 2. Clear from current position to end of screen
       readline.clearScreenDown(process.stdout);
 
       // 3. Print the new content
       process.stdout.write(fullContent);
 
-      // 4. Calculate where the cursor should sit (end of user buffer, before hint)
+      // 4. Calculate new cursor position
       const currentPos = visiblePromptLen + buf.length;
-
-      // Correct row/col for terminal line wrapping.
-      // When currentPos is exactly a multiple of cols, the cursor is at the
-      // start of the NEXT row (col 0), not at col 0 of the current row.
       const currentRow = Math.floor(currentPos / cols);
       const currentCol = currentPos % cols;
 
-      // 5. Calculate total height of what we just printed
-      const totalLen = visiblePromptLen + buf.length + hint.length;
-      // totalRows is the index of the last row (0-based)
-      const totalRows = totalLen > 0 ? Math.floor((totalLen - 1) / cols) : 0;
+      // 5. Calculate total visual height of the rendered block
+      const totalLen = getVisibleLength(prompt + buf + hint);
+      const totalRows = Math.floor(Math.max(0, totalLen - 1) / cols);
 
-      // 6. Move cursor back from the end of the total text to the user's cursor position
+      // 6. Move cursor back up to the user's typing position
       const rowsToMoveUp = totalRows - currentRow;
       if (rowsToMoveUp > 0) {
         readline.moveCursor(process.stdout, 0, -rowsToMoveUp);
       }
-
-      // 7. Reset horizontal position to the correct column
       readline.cursorTo(process.stdout, currentCol);
 
       lastRelativeCursorRow = currentRow;
@@ -73,7 +64,9 @@ export async function readLineWithHint(prompt: string): Promise<string> {
     const onData = (key: string) => {
       // Handle Pasting
       if (key.length > 1 && !key.startsWith("\x1b")) {
-        buf += key.replace(/[\r\n]/g, ""); 
+        // Clean up pasted text and append to buffer
+        const cleanPaste = key.replace(/[\r\n]/g, " ");
+        buf += cleanPaste;
         render();
         return;
       }

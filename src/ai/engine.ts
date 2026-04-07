@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import type * as readLine from "readline/promises";
 import { marked } from "../ui/theme";
 import { AMBER, BOLD, RESET, DIM, CHARCOAL } from "../ui/theme";
-import { showSpinner } from "../ui/components";
+import { showSpinner, getLineHeight } from "../ui/components";
 import { printError, printUsage } from "../ui/components";
 import { AppState } from "../types";
 import { getStream } from "./transport";
@@ -71,7 +71,6 @@ export async function runTurn(
       let response: any = null;
       let hasText = false;
       let mergedParts: any[] = [];
-      let streamedLines = 0;
 
       for await (const chunk of stream) {
         response = chunk;
@@ -87,7 +86,6 @@ export async function runTurn(
             hasText = true;
           }
           process.stdout.write(text);
-          streamedLines += (text.match(/\n/g) || []).length;
         }
       }
 
@@ -96,10 +94,20 @@ export async function runTurn(
           .filter((p: any) => p.text)
           .map((p: any) => p.text)
           .join("");
+
+        const terminalWidth = process.stdout.columns || 80;
+        // Calculate actual rows taken by the "RESPONSE" header and the streamed text
+        const totalRows = getLineHeight(
+          `${AMBER}${BOLD} RESPONSE ${RESET}\n` + fullText,
+          terminalWidth,
+        );
+
         process.stdout.write(`\r\x1b[K`);
-        for (let l = 0; l <= streamedLines + 1; l++) {
+        // Move up the actual number of visual rows used
+        for (let l = 0; l < totalRows; l++) {
           process.stdout.write("\x1b[1A\x1b[2K");
         }
+
         process.stdout.write(`\n${AMBER}${BOLD} RESPONSE ${RESET}\n`);
         console.log((await marked.parse(fullText)).trim());
       }

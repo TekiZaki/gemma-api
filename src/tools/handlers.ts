@@ -64,10 +64,14 @@ export const firecrawlSearch = async ({ query }: { query: string }): Promise<Too
 
 export const scrapeUrl = async ({ url }: { url: string }): Promise<ToolResult> => {
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; gemma-api/1.0)" }
-    });
-    if (!res.ok) return { error: `HTTP ${res.status}` };
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.3856.109" } });
+    
+    // If we hit a JS-only site or a 403
+    if (!res.ok || res.status === 403 || (await res.clone().text()).includes("JavaScript is disabled")) {
+      // TRIGGER THE BRIDGE
+      const result = await $`bun-search --scrape ${url}`.text();
+      return { url, content: result };
+    }
 
     const html = await res.text();
     const root = parse(html);
@@ -83,7 +87,13 @@ export const scrapeUrl = async ({ url }: { url: string }): Promise<ToolResult> =
 
     return { url, content: text ?? "(no content found)" };
   } catch (err: any) {
-    return { error: err.message };
+    // If fetch throws (e.g. network error), also try the fallback
+    try {
+      const result = await $`bun-search --scrape ${url}`.text();
+      return { url, content: result };
+    } catch (fallbackErr: any) {
+      return { error: `Fetch failed: ${err.message}. Fallback failed: ${fallbackErr.message}` };
+    }
   }
 };
 

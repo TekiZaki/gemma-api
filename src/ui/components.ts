@@ -56,8 +56,19 @@ export async function showSpinner(stopCondition: () => boolean): Promise<void> {
 /**
  * Utility to strip ANSI codes to get actual visible length
  */
-function getVisibleLength(str: string): number {
+export function getVisibleLength(str: string): number {
   return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").length;
+}
+
+/**
+ * Calculates the number of visual lines a string will occupy in the terminal.
+ */
+export function getLineHeight(text: string, width: number): number {
+  const lines = text.split("\n");
+  return lines.reduce(
+    (acc, line) => acc + Math.max(1, Math.ceil(getVisibleLength(line) / width)),
+    0,
+  );
 }
 
 function wrapText(text: string, width: number): string[] {
