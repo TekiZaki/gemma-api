@@ -1,0 +1,236 @@
+import { GoogleGenAI } from "@google/genai";
+import { PromptManager, supportsThinking, isOpenRouterModel, loadEnv } from "../config";
+import type { ConversationTurn } from "../types";
+
+// ─── Schema Mapping ───────────────────────────────────────────────────────────
+
+function fixSchema(schema: any): any {
+  if (!schema) return schema;
+  const newSchema = { ...schema };
+  if (newSchema.type === "OBJECT") newSchema.type = "object";
+  if (newSchema.type === "STRING") newSchema.type = "string";
+  if (newSchema.properties) {
+    for (const key in newSchema.properties) {
+      newSchema.properties[key] = fixSchema(newSchema.properties[key]);
+    }
+  }
+  return newSchema;
+}
+
+function mapToolsToOpenRouter(tools: any[]) {
+  const openRouterTools: any[] = [];
+  for (const tool of tools) {
+    if (tool.functionDeclarations) {
+      for (const fd of tool.functionDeclarations) {
+        openRouterTools.push({
+          type: "function",
+          function: {
+            name: fd.name,
+            description: fd.description,
+            parameters: fixSchema(fd.parameters),
+          },
+        });
+      }
+    }
+  }
+  return openRouterTools;
+}
+
+function mapToOpenRouterMessages(contents: ConversationTurn[], systemPrompt: string) {
+  const messages: any[] = [{ role: "system", content: systemPrompt }];
+  
+  for (const turn of contents) {
+    const role = turn.role === "model" ? "assistant" : "user";
+    
+    // Check if it's a tool response turn
+    if (turn.parts.some(p => p.functionResponse)) {
+      for (const part of turn.parts) {
+        if (part.functionResponse) {
+          messages.push({
+            role: "tool",
+            tool_call_id: part.functionResponse.id || "0",
+            name: part.functionResponse.name,
+            content: JSON.stringify(part.functionResponse.response)
+          });
+        }
+      }
+      continue;
+    }
+
+    // Regular turn
+    const contentParts: any[] = [];
+    const toolCalls: any[] = [];
+
+    for (const p of turn.parts) {
+      if (p.text) contentParts.push({ type: "text", text: p.text });
+      if (p.functionCall) {
+        toolCalls.push({
+          id: p.functionCall.id || "0",
+          type: "function",
+          function: {
+            name: p.functionCall.name,
+            arguments: JSON.stringify(p.functionCall.args)
+          }
+        });
+      }
+    }
+
+    const message: any = { role };
+    if (contentParts.length > 0) {
+      message.content = contentParts.map(cp => cp.text).join("");
+    }
+    if (toolCalls.length > 0) {
+      message.tool_calls = toolCalls;
+    }
+    messages.push(message);
+  }
+  return messages;
+}
+
+// ─── OpenRouter Transport ──────────────────────────────────────────────────────
+
+async function* callOpenRouter(
+  model: string,
+  contents: ConversationTurn[],
+  activeTools: any[],
+  selectedSearch?: string,
+) {
+  const keys = loadEnv();
+  const systemPrompt = PromptManager.getSystemPrompt(selectedSearch);
+  const tools = mapToolsToOpenRouter(activeTools);
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${keys.openrouter}`,
+      "HTTP-Referer": "https://github.com/dzaki/gemma-api",
+      "X-OpenRouter-Title": "Gemma CLI",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: mapToOpenRouterMessages(contents, systemPrompt),
+      ...(tools.length > 0 && { tools }),
+      // Add this line to enable the compression plugin
+      plugins: [{ id: "context-compression" }], 
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`OpenRouter Error: ${response.status} ${err}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) return;
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const toolCallsAcc: any[] = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const cleanLine = line.trim();
+      if (!cleanLine) continue;
+      if (cleanLine.startsWith("data: ")) {
+        const data = cleanLine.slice(6).trim();
+        if (data === "[DONE]") {
+          // Final check for tool calls if any
+          if (toolCallsAcc.length > 0) {
+            yield {
+              candidates: [{ 
+                content: { 
+                  parts: toolCallsAcc.map(tc => ({
+                    functionCall: {
+                      name: tc.name,
+                      args: JSON.parse(tc.args || "{}"),
+                      id: tc.id
+                    }
+                  }))
+                } 
+              }]
+            };
+          }
+          return;
+        }
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta;
+          const content = delta?.content || "";
+          const tcDeltas = delta?.tool_calls;
+          const usage = parsed.usage;
+
+          if (tcDeltas) {
+            for (const tc of tcDeltas) {
+              if (!toolCallsAcc[tc.index]) {
+                toolCallsAcc[tc.index] = { id: tc.id, name: tc.function?.name, args: "" };
+              }
+              if (tc.id) toolCallsAcc[tc.index].id = tc.id;
+              if (tc.function?.name) toolCallsAcc[tc.index].name = tc.function.name;
+              if (tc.function?.arguments) toolCallsAcc[tc.index].args += tc.function.arguments;
+            }
+          }
+
+          if (content || usage) {
+            yield {
+              candidates: content
+                ? [{ content: { parts: [{ text: content }] } }]
+                : [],
+              usageMetadata: usage
+                ? {
+                    promptTokenCount: usage.prompt_tokens,
+                    candidatesTokenCount: usage.completion_tokens,
+                    totalTokenCount: usage.total_tokens,
+                  }
+                : undefined,
+            };
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    }
+  }
+}
+
+// ─── Unified Stream Generator ────────────────────────────────────────────────
+
+export async function* getStream(
+  model: string,
+  contents: ConversationTurn[],
+  options: {
+    ai: GoogleGenAI;
+    activeTools: any[];
+    selectedSearch?: string;
+  }
+) {
+  if (isOpenRouterModel(model)) {
+    yield* callOpenRouter(model, contents, options.activeTools, options.selectedSearch);
+  } else {
+    const stream = await options.ai.models.generateContentStream({
+      model,
+      contents,
+      config: {
+        tools: options.activeTools,
+        systemInstruction: PromptManager.getSystemPrompt(options.selectedSearch),
+        ...(supportsThinking(model) && {
+          thinkingConfig: {
+            thinkingLevel: "MINIMAL" as any,
+            includeThoughts: false,
+          },
+        }),
+      },
+    });
+    for await (const chunk of stream) {
+      yield chunk;
+    }
+  }
+}

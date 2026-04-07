@@ -4,6 +4,7 @@ import { AMBER, BOLD, CHARCOAL, DIM, RESET } from "../ui/theme";
 import { marked } from "../ui/theme";
 import { showSpinner, printCard, printAction, printObservation } from "../ui/components";
 import { PromptManager, supportsThinking } from "../config";
+import { getStream } from "../ai/transport";
 import { toolHandlers } from "./handlers";
 import { toolDefinitions } from "./definitions";
 import type { ConversationTurn, UsageAccumulator, SessionStats } from "../types";
@@ -128,16 +129,10 @@ export async function handleToolCalls(
   const spinnerPromise = showSpinner(() => !spinnerRunning);
 
   try {
-    const stream = await ai.models.generateContentStream({
-      model: state.model,
-      contents,
-      config: {
-        tools: activeTools,
-        systemInstruction: PromptManager.getSystemPrompt(selectedSearch),
-        ...(supportsThinking(state.model) && {
-          thinkingConfig: { thinkingLevel: "MINIMAL" as any, includeThoughts: false },
-        }),
-      },
+    const stream = getStream(state.model, contents, {
+      ai,
+      activeTools,
+      selectedSearch,
     });
 
     spinnerRunning = false;

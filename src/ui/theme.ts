@@ -5,6 +5,9 @@ import TerminalRenderer from "marked-terminal";
 
 export const AMBER = "\x1b[38;2;255;191;0m";
 export const CHARCOAL = "\x1b[38;2;40;40;40m";
+export const EMERALD = "\x1b[38;2;80;200;120m";
+export const SAPPHIRE = "\x1b[38;2;15;82;186m";
+export const SLATE = "\x1b[38;2;112;128;144m";
 export const RESET = "\x1b[0m";
 export const BOLD = "\x1b[1m";
 export const DIM = "\x1b[2m";

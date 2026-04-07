@@ -1,4 +1,4 @@
-import { AMBER, BOLD, CHARCOAL, DIM, RESET } from "./theme";
+import { AMBER, BOLD, CHARCOAL, DIM, RESET, EMERALD, SAPPHIRE, SLATE } from "./theme";
 import type { UsageMetadata } from "../types";
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -130,9 +130,9 @@ export function printAction(name: string, args: any): void {
     ([k, v]) => `${BOLD}${k}${RESET}: ${DIM}${typeof v === 'string' && v.length > 100 ? v.slice(0, 100) + '...' : JSON.stringify(v)}${RESET}`
   );
   printCard({
-    title: `Action: ${name}`,
+    title: `⚡ Action: ${name}`,
     lines: argLines,
-    color: AMBER,
+    color: SLATE,
   });
 }
 
@@ -174,9 +174,9 @@ export function printObservation(name: string, result: any): void {
   }
 
   printCard({
-    title: `Observation: ${name}`,
+    title: `👁️ Observation: ${name}`,
     lines,
     footer,
-    color: AMBER,
+    color: result.error ? "\x1b[38;2;255;85;85m" : EMERALD,
   });
 }

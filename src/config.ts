@@ -14,7 +14,19 @@ export const AVAILABLE_MODELS = [
   "gemma-4-26b-a4b-it",
   "gemini-2.5-flash-lite",
   "gemma-4-31b-it",
+
+  // OpenRouter model list
+  "qwen/qwen3.6-plus:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "minimax/minimax-m2.5:free",
+  "stepfun/step-3.5-flash:free",
+  "arcee-ai/trinity-large-preview:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "arcee-ai/trinity-mini:free",
+  "z-ai/glm-4.5-air:free",
 ];
+
+export const isOpenRouterModel = (model: string): boolean => model.includes("/");
 
 // ─── Models that support thinkingConfig ───────────────────────────────────────
 
@@ -33,7 +45,7 @@ export const supportsThinking = (model: string): boolean =>
 // ─── Environment Loading ──────────────────────────────────────────────────────
 
 export function loadEnv() {
-  if (!process.env.GEMINI_API_KEY && existsSync(ENV_PATH)) {
+  if (existsSync(ENV_PATH)) {
     const envContent = readFileSync(ENV_PATH, "utf-8");
     envContent.split("\n").forEach((line) => {
       const [key, ...valueParts] = line.split("=");
@@ -42,7 +54,10 @@ export function loadEnv() {
       }
     });
   }
-  return process.env.GEMINI_API_KEY || null;
+  return {
+    gemini: process.env.GEMINI_API_KEY || null,
+    openrouter: process.env.OPENROUTER_API_KEY || null,
+  };
 }
 
 // ─── Config Persistence ───────────────────────────────────────────────────────

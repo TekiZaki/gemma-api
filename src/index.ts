@@ -2,7 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import * as readLine from "readline/promises";
 import { stdin as input, stdout as output } from "process";
-import { loadEnv, loadConfig, AVAILABLE_MODELS } from "./config";
+import { loadEnv, loadConfig, AVAILABLE_MODELS, isOpenRouterModel } from "./config";
 import { printHeader, printError } from "./ui/components";
 import { runTurn } from "./ai/engine";
 import { HistoryManager } from "./ai/history";
@@ -16,7 +16,7 @@ import { readLineWithHint } from "./ui/readline";
 
 async function main() {
   // Load environment and config
-  const apiKey = loadEnv();
+  const apiKeys = loadEnv();
   const config = loadConfig();
 
   // Initialize state singleton
@@ -28,7 +28,12 @@ async function main() {
   // Print header with current model
   printHeader(state.model);
 
-  if (!apiKey) {
+  const isOR = isOpenRouterModel(state.model);
+  if (isOR && !apiKeys.openrouter) {
+    printError(`OPENROUTER_API_KEY not found.`);
+    process.exit(1);
+  }
+  if (!isOR && !apiKeys.gemini) {
     printError(`GEMINI_API_KEY not found.`);
     process.exit(1);
   }
@@ -37,7 +42,7 @@ async function main() {
   const stdinContent = await readStdin();
 
   // Initialize AI and readline
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: apiKeys.gemini || "" });
   const rl = readLine.createInterface({
     input,
     output,

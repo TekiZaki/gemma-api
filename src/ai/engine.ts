@@ -4,7 +4,8 @@ import { marked } from "../ui/theme";
 import { AMBER, BOLD, RESET, DIM, CHARCOAL } from "../ui/theme";
 import { showSpinner } from "../ui/components";
 import { printError, printUsage } from "../ui/components";
-import { PromptManager, supportsThinking } from "../config";
+import { AppState } from "../types";
+import { getStream } from "./transport";
 import { handleToolCalls } from "../tools/executor";
 import type {
   ConversationTurn,
@@ -12,7 +13,7 @@ import type {
   UsageAccumulator,
   SessionStats,
 } from "../types";
-import { AppState } from "../types";
+
 
 // ─── Run Turn ─────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,8 @@ export async function runTurn(
   const usageAcc: UsageAccumulator = { p: 0, c: 0 };
   const now = new Date();
   const dateStr = now.toLocaleString("en-ID", { timeZone: "Asia/Jakarta" });
+  let spinnerRunning = true;
+  let spinnerPromise: Promise<void> = Promise.resolve();
 
   try {
     const enrichedPrompt = silent
@@ -41,8 +44,7 @@ export async function runTurn(
       : `[SYSTEM_TIME_SYNC: ${dateStr}]\n${prompt}`;
     contents.push({ role: "user", parts: [{ text: enrichedPrompt }] });
 
-    let spinnerRunning = true;
-    const spinnerPromise = silent
+    spinnerPromise = silent
       ? Promise.resolve()
       : showSpinner(() => !spinnerRunning);
 
@@ -56,21 +58,11 @@ export async function runTurn(
         activeTools = [...toolDefinitions];
       }
     }
-
     try {
-      const stream = await ai.models.generateContentStream({
-        model: state.model,
-        contents,
-        config: {
-          tools: activeTools,
-          systemInstruction: PromptManager.getSystemPrompt(selectedSearch),
-          ...(supportsThinking(state.model) && {
-            thinkingConfig: {
-              thinkingLevel: "MINIMAL" as any,
-              includeThoughts: false,
-            },
-          }),
-        },
+      const stream = getStream(state.model, contents, {
+        ai,
+        activeTools,
+        selectedSearch,
       });
 
       spinnerRunning = false;
