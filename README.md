@@ -1,112 +1,75 @@
-# Gemma API CLI
+# gemma-api
 
-A powerful, terminal-based AI assistant built on top of the `@google/genai` SDK and the Bun runtime. This CLI application provides a rich, interactive REPL environment with deep system integration, web scraping capabilities, and real-time execution tools.
+gemma-api is a command-line AI assistant powered by Google's Generative AI models, built using Bun and TypeScript. It provides an intuitive terminal interface that supports interactive REPL sessions, single-shot queries, and piped standard input.
 
----
+## Features
 
-## 🚀 Features
+* **Multiple Models**: Supports models like `gemma-4-31b-it`, `gemini-2.5-flash-lite`, and others, featuring an interactive model selector.
+* **Tool Integration**: Capable of executing local terminal commands, reading local files, and scraping web URLs for comprehensive context.
+* **Web Search**: Integrates with Google Search Grounding, Firecrawl, and a custom `bun-search` tool for real-time web data extraction.
+* **Session Management**: Save, load, and clear your conversation history to maintain context across sessions.
+* **Thinking Mode**: Supports advanced reasoning capabilities for supported Gemini and Gemma models.
 
-* **Interactive REPL & Single-Shot Modes:** Engage in continuous conversations or pipe standard input directly into the AI for quick, single-shot tasks.
-* **Rich Terminal UI:** Enjoy markdown rendering directly in your terminal, complete with auto-wrapping, syntax highlighting, and a custom Amber/Charcoal visual theme.
-* **Advanced Tool Integrations:** * 🖥️ **Terminal Execution:** The AI can execute safe local CLI commands.
-  * 🔍 **Web Search:** Built-in support for Google Search grounding, Firecrawl, and custom Bun search.
-  * 🕸️ **Web Scraping:** Automatically fetches, strips, and parses full markdown content from URLs.
-  * 📁 **File Reading:** Natively read and process local files.
-* **Context & History Management:** Save, load, and clear conversation history directly from the prompt.
-* **Dynamic Model Switching:** Easily toggle between supported models (e.g., `gemini-2.5-flash-lite`, `gemma-4-26b-a4b-it`) using an interactive terminal selector.
+## Prerequisites
 
----
+* Bun installed on your system.
+* A valid Google Gemini API Key.
+* [Bun Search](https://github.com/TekiZaki/bun-search) installed globally to enable the default command-line search capabilities.
+* (Optional) A Firecrawl API Key if you intend to use the deep web research tool.
 
-## 🛠️ Prerequisites
+## Installation
 
-* **[Bun](https://bun.sh/)** (JavaScript runtime) installed on your system.
-* A **Google Gemini API Key**.
-* *(Optional)* A **Firecrawl API Key** for advanced web extraction tools.
-
----
-
-## 📦 Installation & Setup
-
-1. **Clone or Extract the Project:**
-   Navigate to the project root directory.
-
-2. **Install Dependencies:**
-
+1. Clone the repository and navigate to the project directory.
+2. Install dependencies using Bun:
    ```bash
    bun install
    ```
-
-3. **Configure Environment Variables:**
-   Create a `.env` file in the root directory and add your API keys:
-
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   FIRECRAWL_API_KEY=your_firecrawl_api_key_here  # Optional
+3. Link the package globally so you can run the tool from anywhere using the `gemma-api` command:
+   ```bash
+   bun link
    ```
 
----
+## Configuration
 
-## 💻 Usage
+Create a `.env` file in the root of your project directory to store your credentials:
 
-### 1. REPL Mode (Interactive)
-
-Start the interactive chat environment by simply running the start script:
-
-```bash
-bun run start
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+FIRECRAWL_API_KEY=your_firecrawl_api_key_here
 ```
 
-### 2. Single-Shot Mode
+## Usage
 
-Pass prompts directly via arguments for immediate execution and exit:
-
+### Interactive Mode (REPL)
+Start the interactive chat interface by running the command without arguments:
 ```bash
-bun run start "Summarize the latest news regarding space exploration"
+gemma-api
 ```
 
-*Note: Add `--no-tools` or `--nt` to disable the AI's ability to trigger local tools.*
-
-### 3. Piped Input
-
-Pipe content from files or other terminal commands directly into the CLI:
-
+### Single-Shot Mode
+Pass your prompt directly as arguments to get an immediate response:
 ```bash
-cat server.log | bun run start "Find the fatal error in these logs and explain it"
+gemma-api "What is the current system date?"
 ```
 
----
+### Piped Input
+Pipe standard output from other commands or files directly into the assistant:
+```bash
+cat src/index.ts | gemma-api "Refactor this code to improve performance"
+```
 
-## ⌨️ Available Commands
+## Available Commands
 
-While in the REPL environment, you can use the following commands to control the session:
+When running in REPL mode, you can use the following commands to control the session:
 
-| Command | Description |
-| :--- | :--- |
-| `/help` or `?` | Show the help menu. |
-| `/reset` or `!clear` | Clear the current conversation history. |
-| `/model` or `!model` | Opens an interactive menu to switch the AI model. |
-| `/model [name]` | Immediately switches to the specified model. |
-| `/save` or `!save` | Saves the current conversation history to `history.json`. |
-| `/load` or `!load` | Loads conversation history from `history.json`. |
-| `!bun` | Forces the AI to utilize the `bun_search` tool. |
-| `!firecrawl` | Forces the AI to utilize the `firecrawl_search` tool. |
-| `!google` | Enables direct Google Search Grounding for the current prompt. |
-| `exit`, `quit`, `\q` | Close the CLI application. |
+* `/help` or `/`: Show the help menu.
+* `/reset` or `!clear`: Clear the current conversation history.
+* `/model` or `!model [model_name]`: Open the interactive model selector or directly change the AI model.
+* `/save` or `!save`: Save the conversation history to `history.json`.
+* `/load` or `!load`: Load previous conversation history from `history.json`.
+* `!bun`, `!firecrawl`, `!google`: Force the assistant to use a specific search engine for the prompt.
+* `exit`, `quit`, `\q`: Exit the application.
 
----
+## Search Engines
 
-## 🏗️ Project Structure
-
-* **`src/index.ts`**: The main entry point handling CLI logic and the REPL loop.
-* **`src/config.ts`**: Environment loading, model definitions, and system prompts.
-* **`src/commands.ts`**: Handlers for user slash/bang commands.
-* **`src/ai/engine.ts`**: The core AI execution loop, handling streams and token usage.
-* **`src/ai/history.ts`**: Manages the conversation state and time-syncing.
-* **`src/tools/`**: Definitions and executors for the AI's external capabilities (terminal, scraping, searching).
-* **`src/ui/`**: Visual components, theming (`marked-terminal`), and interactive readline prompts.
-
----
-
-## 🛡️ Security Note
-
-This CLI features a `terminal_execute` tool. By default, the application will pause and ask for your explicit authorization `[y/N]` before executing any terminal commands proposed by the AI, ensuring your system remains secure.
+By default, the AI is instructed to utilize `bun_search` for factual web queries, which depends on [https://github.com/TekiZaki/bun-search](https://github.com/TekiZaki/bun-search) being accessible in your environment. You can also explicitly trigger Google Search Grounding by prepending `!google` to your prompt, or Firecrawl for markdown-based deep crawling by prepending `!firecrawl`.
