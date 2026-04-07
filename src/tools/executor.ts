@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import type * as readLine from "readline/promises";
 import { AMBER, BOLD, CHARCOAL, DIM, RESET } from "../ui/theme";
 import { marked } from "../ui/theme";
-import { showSpinner } from "../ui/components";
+import { showSpinner, printCard, printAction, printObservation } from "../ui/components";
 import { PromptManager, supportsThinking } from "../config";
 import { toolHandlers } from "./handlers";
 import { toolDefinitions } from "./definitions";
@@ -62,11 +62,9 @@ export async function handleToolCalls(
           },
         };
       }
+      printAction(name, args);
       const result = await handler(args);
-      const argSummary = JSON.stringify(args).slice(0, 80);
-      console.log(
-        `\n${CHARCOAL}\x1b[48;2;255;191;0m OBSERVED \x1b[0m ${DIM}${name}(${argSummary})${RESET}`,
-      );
+      printObservation(name, result);
       return { functionResponse: { name, response: result, id } };
     }),
   );
@@ -76,10 +74,14 @@ export async function handleToolCalls(
     const { name, args, id } = call;
     const handler = toolHandlers[name];
     if (!handler) continue;
-    process.stdout.write(`\r\x1b[K`);
-    console.log(
-      `\n${AMBER}${BOLD}⚡ CALLING TOOL...${RESET}\n${DIM}Tool:${RESET} ${name}\n${DIM}Args:${RESET} ${JSON.stringify(args, null, 2)}`,
-    );
+    printCard({
+      title: "Action Required",
+      lines: [
+        `${BOLD}Tool:${RESET} ${name}`,
+        `${BOLD}Args:${RESET} ${JSON.stringify(args, null, 2)}`
+      ],
+      color: AMBER
+    });
 
     let authorized = false;
     if (piped) {
@@ -105,9 +107,7 @@ export async function handleToolCalls(
       continue;
     }
     const result = await handler(args);
-    console.log(
-      `\n${CHARCOAL}\x1b[48;2;255;191;0m OBSERVED \x1b[0m ${DIM}${name}${RESET}\n`,
-    );
+    printObservation(name, result);
     parts.push({ functionResponse: { name, response: result, id } });
   }
 

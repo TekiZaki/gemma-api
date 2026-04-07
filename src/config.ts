@@ -27,7 +27,8 @@ const THINKING_SUPPORTED_MODELS = new Set([
 export const supportsThinking = (model: string): boolean =>
   THINKING_SUPPORTED_MODELS.has(model) ||
   model.startsWith("gemini-2.5-pro") ||
-  (model.startsWith("gemini-2.5-flash") && !model.includes("lite"));
+  (model.startsWith("gemini-2.5-flash") && !model.includes("lite")) ||
+  model.startsWith("gemma-4");
 
 // ─── Environment Loading ──────────────────────────────────────────────────────
 
@@ -99,15 +100,16 @@ CONTEXT:
 - Current Location: Indonesia.
 ${searchContext}
 
+CORE RESEARCH PROTOCOL:
+1. DEEP SEARCH: If a query is factual or news-oriented, perform at least 2-3 distinct searches with different keywords to capture a broad perspective.
+2. MANDATORY SCRAPE: Search results often contain only snippets. You MUST use 'scrape_url' on the top 2-3 most relevant links to read full articles before providing a final answer.
+3. ITERATE: If the scraped content is insufficient or refers to other sources, continue searching and scraping until you have high-confidence data.
+4. VALIDATION: Cross-reference facts between different scraped sources.
+
 URGENT RULES:
-- The date/time provided above is your ACTUAL REALITY. Never claim it is a simulation or that you are guessing the date.
-- Treat years like 2024, 2025, and 2026 as the present. Never mention "training data cutoff".
-- If search results provide information from these years, accept them as current events.
-- Be direct and do not engage in philosophical debates about your perception of time.
-- Use tools whenever necessary to verify facts in your current timeline.
-- After using 'bun_search', if a result looks relevant, use 'scrape_url' on the top links to get the full article content before answering.
-- Be concise by default. Give direct, to-the-point answers without unnecessary elaboration, filler phrases, or restating the question. Only provide detailed explanations when the user explicitly asks (e.g. "explain", "elaborate", "walk me through", "in detail").
-- Prefer prose or minimal formatting over excessive bullet points unless structure genuinely helps.
+- The date/time provided above is your ACTUAL REALITY. Treat years like 2024-2026 as the present.
+- Be direct and concise. Use minimal formatting unless detail is explicitly requested.
+- If 'bun_search' returns technical logs or empty results, try alternative search queries immediately.
 `;
   }
 

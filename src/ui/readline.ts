@@ -1,3 +1,4 @@
+import * as readline from "node:readline";
 import { AMBER, DIM, RESET } from "./theme";
 
 function getVisibleLength(str: string): number {
@@ -5,18 +6,9 @@ function getVisibleLength(str: string): number {
 }
 
 const COMPLETIONS = [
-  "/help",
-  "/reset",
-  "/model",
-  "/save",
-  "/load",
-  "!clear",
-  "!model",
-  "!bun",
-  "!firecrawl",
-  "!google",
-  "exit",
-  "quit",
+  "/help", "/reset", "/model", "/save", "/load",
+  "!clear", "!model", "!bun", "!firecrawl", "!google",
+  "exit", "quit",
 ];
 
 function getSuggestion(input: string): string {
@@ -31,42 +23,47 @@ export async function readLineWithHint(prompt: string): Promise<string> {
     let lastRelativeCursorRow = 0;
 
     const render = () => {
-      const hint = getSuggestion(buf);
       const cols = process.stdout.columns || 80;
       const visiblePromptLen = getVisibleLength(prompt);
+      const hint = getSuggestion(buf);
+      const fullContent = `${prompt}${buf}${DIM}${hint}${RESET}`;
 
-      // Calculate where the cursor IS currently relative to the start of the prompt
+      // 1. Move cursor back to the start of the prompt block
       if (lastRelativeCursorRow > 0) {
-        process.stdout.write(`\x1b[${lastRelativeCursorRow}A`);
+        readline.moveCursor(process.stdout, 0, -lastRelativeCursorRow);
       }
-      process.stdout.write("\r"); // Back to start of line
-      process.stdout.write("\x1b[J"); // Clear everything below the cursor
+      readline.cursorTo(process.stdout, 0);
 
-      // Print full line (Prompt + Buffer + Hint)
-      const fullOutput = `${prompt}${buf}${DIM}${hint}${RESET}`;
-      process.stdout.write(fullOutput);
+      // 2. Clear everything from that point down to erase previous prompt
+      readline.clearScreenDown(process.stdout);
 
-      // Calculate new cursor position
-      const totalVisibleLen = visiblePromptLen + buf.length;
-      const totalContentLen = totalVisibleLen + hint.length;
+      // 3. Print the new content
+      process.stdout.write(fullContent);
 
-      const currentCursorRow = Math.floor(totalVisibleLen / cols);
-      const totalRows = Math.floor(totalContentLen / cols);
+      // 4. Calculate where the cursor should sit (end of user buffer, before hint)
+      const currentPos = visiblePromptLen + buf.length;
 
-      // Move cursor back from the end of the HINT to the end of the BUF
-      const rowsToMoveUp = totalRows - currentCursorRow;
+      // Correct row/col for terminal line wrapping.
+      // When currentPos is exactly a multiple of cols, the cursor is at the
+      // start of the NEXT row (col 0), not at col 0 of the current row.
+      const currentRow = Math.floor(currentPos / cols);
+      const currentCol = currentPos % cols;
+
+      // 5. Calculate total height of what we just printed
+      const totalLen = visiblePromptLen + buf.length + hint.length;
+      // totalRows is the index of the last row (0-based)
+      const totalRows = totalLen > 0 ? Math.floor((totalLen - 1) / cols) : 0;
+
+      // 6. Move cursor back from the end of the total text to the user's cursor position
+      const rowsToMoveUp = totalRows - currentRow;
       if (rowsToMoveUp > 0) {
-        process.stdout.write(`\x1b[${rowsToMoveUp}A`);
+        readline.moveCursor(process.stdout, 0, -rowsToMoveUp);
       }
 
-      // Restore horizontal position
-      const currentCol = totalVisibleLen % cols;
-      process.stdout.write("\r");
-      if (currentCol > 0) {
-        process.stdout.write(`\x1b[${currentCol}C`);
-      }
+      // 7. Reset horizontal position to the correct column
+      readline.cursorTo(process.stdout, currentCol);
 
-      lastRelativeCursorRow = currentCursorRow;
+      lastRelativeCursorRow = currentRow;
     };
 
     process.stdin.setRawMode(true);
@@ -74,9 +71,9 @@ export async function readLineWithHint(prompt: string): Promise<string> {
     process.stdin.setEncoding("utf8");
 
     const onData = (key: string) => {
-      // Handle Ctrl+V / Pasting (Bun/Node typically delivers this as a chunk)
+      // Handle Pasting
       if (key.length > 1 && !key.startsWith("\x1b")) {
-        buf += key.replace(/[\r\n]/g, ""); // Strip newlines from paste
+        buf += key.replace(/[\r\n]/g, ""); 
         render();
         return;
       }
@@ -99,15 +96,13 @@ export async function readLineWithHint(prompt: string): Promise<string> {
         return;
       }
 
-      if (key === "\x03") {
-        // Ctrl-C
+      if (key === "\x03") { // Ctrl+C
         process.stdout.write("\n");
         cleanup();
         process.exit(0);
       }
 
-      if (key === "\x7f" || key === "\b") {
-        // Backspace
+      if (key === "\x7f" || key === "\b") { // Backspace
         if (buf.length > 0) {
           buf = buf.slice(0, -1);
           render();

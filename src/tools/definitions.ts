@@ -16,7 +16,7 @@ export const toolDefinitions = [
       },
       {
         name: "bun_search",
-        description: "Standard search engine. Use this for general real-time web queries.",
+        description: "Search the web for real-time info. Note: Returns only snippets. ALWAYS follow up with 'scrape_url' on promising links to get actual facts.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -49,7 +49,7 @@ export const toolDefinitions = [
       },
       {
         name: "scrape_url",
-        description: "Fetches and extracts the readable text content from a web page URL. Use after bun_search to read full articles.",
+        description: "Downloads and parses the full text content of a URL. Use this MANDATORY step after searching to read the actual articles found in search results.",
         parameters: {
           type: "OBJECT",
           properties: {

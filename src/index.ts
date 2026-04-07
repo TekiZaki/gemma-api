@@ -106,7 +106,9 @@ async function main() {
     );
     try {
       while (true) {
+        rl.pause();
         const answer = await readLineWithHint(`${AMBER}?> ${RESET}`);
+        rl.resume();
         const cleanAnswer = answer.trim();
         if (!cleanAnswer) continue;
 

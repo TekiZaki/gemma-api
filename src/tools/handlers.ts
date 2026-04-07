@@ -1,14 +1,14 @@
 import { $ } from "bun";
 import { readFileSync, existsSync } from "fs";
 import { parse } from "node-html-parser";
-import { AMBER, RESET } from "../ui/theme";
+import { AMBER, DIM, RESET } from "../ui/theme";
+import { printCard } from "../ui/components";
 import type { ToolResult } from "../types";
 
 // ─── Tool Implementations ─────────────────────────────────────────────────────
 
 export const terminalExecute = async ({ command }: { command: string }): Promise<ToolResult> => {
   try {
-    console.log(`\n${AMBER}⚡ EXECUTING:${RESET} ${command}`);
     const result = await $`${{ raw: command }}`.text();
     return { output: result };
   } catch (err: any) {
@@ -21,8 +21,6 @@ export const terminalExecute = async ({ command }: { command: string }): Promise
  */
 export const bunSearch = async ({ query }: { query: string }): Promise<ToolResult> => {
   try {
-    console.log(`\n${AMBER}🌍 SEARCHING (BUN):${RESET} ${query}`);
-    // Executes your local bun-search command
     const result = await $`bun-search ${query}`.text();
     return { results: result };
   } catch (err: any) {
@@ -32,7 +30,6 @@ export const bunSearch = async ({ query }: { query: string }): Promise<ToolResul
 
 export const firecrawlSearch = async ({ query }: { query: string }): Promise<ToolResult> => {
   try {
-    console.log(`\n${AMBER}🌍 SEARCHING (FIRECRAWL):${RESET} ${query}`);
     const apiKey = process.env.FIRECRAWL_API_KEY;
     if (!apiKey) return { error: "FIRECRAWL_API_KEY not found in environment." };
 
@@ -67,7 +64,6 @@ export const firecrawlSearch = async ({ query }: { query: string }): Promise<Too
 
 export const scrapeUrl = async ({ url }: { url: string }): Promise<ToolResult> => {
   try {
-    console.log(`\n${AMBER}🕷️  SCRAPING:${RESET} ${url}`);
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; gemma-api/1.0)" }
     });
