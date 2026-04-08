@@ -5,7 +5,7 @@ export const toolDefinitions = [
     functionDeclarations: [
       {
         name: "terminal_execute",
-        description: "Executes a command in the local terminal. Use 'date' to check current system time.",
+        description: "Executes terminal commands. Use 'date' for system time.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -16,7 +16,7 @@ export const toolDefinitions = [
       },
       {
         name: "bun_search",
-        description: "Search the web for real-time info. Note: Returns only snippets. ALWAYS follow up with 'scrape_url' on promising links to get actual facts.",
+        description: "Web search (snippets only). Must follow with 'scrape_url' for full content.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -27,7 +27,7 @@ export const toolDefinitions = [
       },
       {
         name: "firecrawl_search",
-        description: "Advanced search and crawl engine. Use this for deep web data extraction and clean markdown results.",
+        description: "Deep search/crawl. Returns clean markdown data.",
         parameters: {
           type: "OBJECT",
           properties: {
@@ -49,7 +49,7 @@ export const toolDefinitions = [
       },
       {
         name: "scrape_url",
-        description: "Downloads and parses the full text content of a URL. Use this MANDATORY step after searching to read the actual articles found in search results.",
+        description: "Extracts full text from a URL. Mandatory step after search to read the actual content.",
         parameters: {
           type: "OBJECT",
           properties: {

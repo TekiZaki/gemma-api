@@ -39,10 +39,7 @@ export async function runTurn(
   let spinnerPromise: Promise<void> = Promise.resolve();
 
   try {
-    const enrichedPrompt = silent
-      ? prompt
-      : `[SYSTEM_TIME_SYNC: ${dateStr}]\n${prompt}`;
-    contents.push({ role: "user", parts: [{ text: enrichedPrompt }] });
+    contents.push({ role: "user", parts: [{ text: prompt }] });
 
     spinnerPromise = silent
       ? Promise.resolve()

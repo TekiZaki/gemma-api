@@ -16,11 +16,6 @@ export class HistoryManager {
    */
   initializeWithTimeSync(): void {
     this.history.length = 0;
-    const syncMessage = PromptManager.getSystemSyncMessage();
-    this.history.push({
-      role: "user",
-      parts: [{ text: syncMessage }],
-    });
   }
 
   /**
