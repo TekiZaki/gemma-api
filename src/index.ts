@@ -10,7 +10,7 @@ import { resolveSearchFeature, readStdin, handleCommand } from "./commands";
 import { AppState, SessionStats as SessionStatsClass } from "./types";
 import type { SessionStats } from "./types";
 import { DIM, AMBER, RESET } from "./ui/theme";
-import { readLineWithHint } from "./ui/readline";
+
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -111,9 +111,8 @@ async function main() {
     );
     try {
       while (true) {
-        rl.pause();
-        const answer = await readLineWithHint(`${AMBER}?> ${RESET}`);
-        rl.resume();
+        const answer = await rl.question(`${AMBER}?> ${RESET}`);
+
         const cleanAnswer = answer.trim();
         if (!cleanAnswer) continue;
 

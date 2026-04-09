@@ -16,13 +16,16 @@ export const AVAILABLE_MODELS = [
   "gemma-4-31b-it",
 
   // OpenRouter model list
-  "qwen/qwen3.6-plus:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "minimax/minimax-m2.5:free",
-  "stepfun/step-3.5-flash:free",
   "arcee-ai/trinity-large-preview:free",
-  "nvidia/nemotron-3-nano-30b-a3b:free",
   "arcee-ai/trinity-mini:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "minimax/minimax-m2.5:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "openai/gpt-oss-20b:free",
+  "qwen/qwen3.6-plus:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
   "z-ai/glm-4.5-air:free",
 ];
 

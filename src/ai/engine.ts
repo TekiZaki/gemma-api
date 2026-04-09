@@ -1,8 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import type * as readLine from "readline/promises";
 import { marked } from "../ui/theme";
-import { AMBER, BOLD, RESET, DIM, CHARCOAL } from "../ui/theme";
-import { showSpinner, getLineHeight } from "../ui/components";
+import { AMBER, BOLD, RESET, DIM } from "../ui/theme";
+import { showSpinner } from "../ui/components";
+
 import { printError, printUsage } from "../ui/components";
 import { AppState } from "../types";
 import { getStream } from "./transport";
@@ -62,52 +63,29 @@ export async function runTurn(
         selectedSearch,
       });
 
-      spinnerRunning = false;
-      await spinnerPromise;
-
       let response: any = null;
-      let hasText = false;
       let mergedParts: any[] = [];
 
       for await (const chunk of stream) {
         response = chunk;
         const parts = chunk.candidates?.[0]?.content?.parts || [];
         mergedParts.push(...parts);
-        const text = parts
-          .filter((p: any) => p.text)
-          .map((p: any) => p.text)
-          .join("");
-        if (text && !silent) {
-          if (!hasText) {
-            process.stdout.write(`\n${AMBER}${BOLD} RESPONSE ${RESET}\n`);
-            hasText = true;
-          }
-          process.stdout.write(text);
-        }
       }
 
-      if (hasText && !silent) {
-        const fullText = mergedParts
-          .filter((p: any) => p.text)
-          .map((p: any) => p.text)
-          .join("");
 
-        const terminalWidth = process.stdout.columns || 80;
-        // Calculate actual rows taken by the "RESPONSE" header and the streamed text
-        const totalRows = getLineHeight(
-          `${AMBER}${BOLD} RESPONSE ${RESET}\n` + fullText,
-          terminalWidth,
-        );
+      spinnerRunning = false;
+      await spinnerPromise;
 
-        process.stdout.write(`\r\x1b[K`);
-        // Move up the actual number of visual rows used
-        for (let l = 0; l < totalRows; l++) {
-          process.stdout.write("\x1b[1A\x1b[2K");
-        }
+      const fullText = mergedParts
+        .filter((p: any) => p.text)
+        .map((p: any) => p.text)
+        .join("");
 
+      if (fullText && !silent) {
         process.stdout.write(`\n${AMBER}${BOLD} RESPONSE ${RESET}\n`);
         console.log((await marked.parse(fullText)).trim());
       }
+
 
       if (!response) return;
 
