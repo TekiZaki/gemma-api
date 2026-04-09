@@ -137,9 +137,13 @@ export function printCard(options: {
 }
 
 export function printAction(name: string, args: any): void {
-  const argLines = Object.entries(args).map(
-    ([k, v]) => `${BOLD}${k}${RESET}: ${DIM}${typeof v === 'string' && v.length > 100 ? v.slice(0, 100) + '...' : JSON.stringify(v)}${RESET}`
-  );
+  const entries = Object.entries(args || {});
+  const argLines = entries.length > 0 
+    ? entries.map(
+        ([k, v]) => `${BOLD}${k}${RESET}: ${DIM}${typeof v === 'string' && v.length > 100 ? v.slice(0, 100) + '...' : JSON.stringify(v)}${RESET}`
+      )
+    : [`${DIM}(no arguments)${RESET}`];
+
   printCard({
     title: `⚡ Action: ${name}`,
     lines: argLines,

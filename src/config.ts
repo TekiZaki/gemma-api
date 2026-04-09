@@ -16,7 +16,6 @@ export const AVAILABLE_MODELS = [
   "gemma-4-31b-it",
 
   // OpenRouter model list
-  "arcee-ai/trinity-large-preview:free",
   "arcee-ai/trinity-mini:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "minimax/minimax-m2.5:free",
@@ -77,7 +76,7 @@ export function loadConfig(): Config {
       /* fall through to default */
     }
   }
-  return { model: "gemma-4-31b-it" };
+  return { model: "gemma-4-26b-a4b-it" };
 }
 
 export function saveConfig(config: Config): void {

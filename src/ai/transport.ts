@@ -145,21 +145,58 @@ async function* callOpenRouter(
         if (data === "[DONE]") {
           // Final check for tool calls if any
           if (toolCallsAcc.length > 0) {
-            yield {
-              candidates: [{ 
-                content: { 
-                  parts: toolCallsAcc.map(tc => ({
-                    functionCall: {
-                      name: tc.name,
-                      args: JSON.parse(tc.args || "{}"),
-                      id: tc.id
+            const parts = toolCallsAcc
+              .filter(tc => tc && tc.name)
+              .map(tc => {
+                let parsedArgs = {};
+                const raw = (tc.args || "").trim();
+                
+                try {
+                  parsedArgs = JSON.parse(raw || "{}");
+                } catch (e) {
+                  // Strategy 1: Remove leading/trailing quotes if the model wrapped the JSON in a string
+                  let rescued = raw;
+                  if (rescued.startsWith('"') && rescued.endsWith('"')) {
+                    rescued = rescued.substring(1, rescued.length - 1).replace(/\\"/g, '"');
+                  }
+                  
+                  // Strategy 2: If it looks like it's missing a closing }, add it
+                  if (rescued.startsWith('{') && !rescued.endsWith('}')) {
+                    rescued += '}';
+                  }
+
+                  try {
+                    parsedArgs = JSON.parse(rescued);
+                  } catch (e2) {
+                    // Strategy 3: Just put it in a 'query' or 'command' field if it's a raw string
+                    // and we can guess the tool's expected field.
+                    if (tc.name === "bun_search" || tc.name === "firecrawl_search") {
+                        parsedArgs = { query: rescued };
+                    } else if (tc.name === "terminal_execute") {
+                        parsedArgs = { command: rescued };
+                    } else if (tc.name === "scrape_url") {
+                         parsedArgs = { url: rescued };
+                    } else {
+                        parsedArgs = { __raw: rescued, error: "Malformed JSON" };
                     }
-                  }))
-                } 
-              }]
-            };
+                  }
+                }
+
+                return {
+                  functionCall: {
+                    name: tc.name,
+                    args: parsedArgs,
+                    id: tc.id
+                  }
+                };
+              });
+
+            if (parts.length > 0) {
+              yield { candidates: [{ content: { parts } }] };
+            }
           }
           return;
+
         }
         try {
           const parsed = JSON.parse(data);
@@ -170,14 +207,21 @@ async function* callOpenRouter(
 
           if (tcDeltas) {
             for (const tc of tcDeltas) {
+              if (tc.index === undefined) continue;
               if (!toolCallsAcc[tc.index]) {
                 toolCallsAcc[tc.index] = { id: tc.id, name: tc.function?.name, args: "" };
               }
-              if (tc.id) toolCallsAcc[tc.index].id = tc.id;
-              if (tc.function?.name) toolCallsAcc[tc.index].name = tc.function.name;
-              if (tc.function?.arguments) toolCallsAcc[tc.index].args += tc.function.arguments;
+              const entry = toolCallsAcc[tc.index];
+              if (tc.id) entry.id = tc.id;
+              if (tc.function?.name) entry.name = tc.function.name;
+              if (tc.function?.arguments) {
+                const args = tc.function.arguments;
+                entry.args += typeof args === "string" ? args : JSON.stringify(args);
+              }
+
             }
           }
+
 
           if (content || usage) {
             yield {

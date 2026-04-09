@@ -2,7 +2,8 @@
 import { GoogleGenAI } from "@google/genai";
 import * as readLine from "readline/promises";
 import { stdin as input, stdout as output } from "process";
-import { loadEnv, loadConfig, AVAILABLE_MODELS, isOpenRouterModel } from "./config";
+import { loadEnv, loadConfig, AVAILABLE_MODELS, isOpenRouterModel, PromptManager } from "./config";
+
 import { printHeader, printError } from "./ui/components";
 import { runTurn } from "./ai/engine";
 import { HistoryManager } from "./ai/history";
@@ -67,16 +68,16 @@ async function main() {
     },
   });
 
-  // Initialize history manager with time sync
+  // Initialize history manager
   const history = new HistoryManager();
-  history.initializeWithTimeSync();
-
-  console.log(
-    `${history.getHistory().length > 0 ? "Synchronizing environment..." : ""}`,
-  );
-  await runTurn("SYSTEM_INIT_ACK", ai, history.getHistory(), rl, stats, {
+  
+  // Combine time sync and init into one turn to avoid double user roles
+  const initPrompt = `${PromptManager.getSystemSyncMessage()}\n\nSYSTEM_INIT_SYNC_REQUEST`;
+  
+  await runTurn(initPrompt, ai, history.getHistory(), rl, stats, {
     silent: true,
   });
+
 
   // Build prompt from args
   let promptFromArgs = process.argv.slice(2).join(" ");

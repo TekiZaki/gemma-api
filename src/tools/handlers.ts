@@ -8,6 +8,7 @@ import type { ToolResult } from "../types";
 // ─── Tool Implementations ─────────────────────────────────────────────────────
 
 export const terminalExecute = async ({ command }: { command: string }): Promise<ToolResult> => {
+  if (!command) return { error: "No command provided." };
   try {
     const result = await $`${{ raw: command }}`.text();
     return { output: result };
@@ -20,9 +21,24 @@ export const terminalExecute = async ({ command }: { command: string }): Promise
  * Custom tool for your specific CLI search
  */
 export const bunSearch = async ({ query }: { query: string }): Promise<ToolResult> => {
+  if (!query) return { error: "No query provided." };
   try {
-    const result = await $`bun-search ${query}`.text();
+    let result = await $`bun-search ${query}`.text();
+
+    // Filter out status logs if they are mixed in stdout
+    result = result.split("\n")
+      .filter(line => 
+        !line.includes("WebSocket Server") && 
+        !line.includes("Chrome Extension") &&
+        !line.includes("⏳") &&
+        !line.includes("✅") &&
+        !line.includes("🌍")
+      )
+      .join("\n")
+      .trim();
     return { results: result };
+
+
   } catch (err: any) {
     return { error: err.message };
   }
