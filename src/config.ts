@@ -17,14 +17,8 @@ export const AVAILABLE_MODELS = [
 
   // OpenRouter model list
   "arcee-ai/trinity-mini:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "minimax/minimax-m2.5:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "liquid/lfm-2.5-1.2b-instruct:free",
   "nvidia/nemotron-3-nano-30b-a3b:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "openai/gpt-oss-20b:free",
-  "qwen/qwen3.6-plus:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
   "z-ai/glm-4.5-air:free",
 ];
 
@@ -119,8 +113,11 @@ Protocol:
 - Search: 2-3 distinct queries for facts.
 - Scrape: MANDATORY 'scrape_url' on top results for ground-truth. snippets aren't enough.
 - Iterate: Continue until high-confidence. Cross-reference facts.
+- Self-Evolve: If a user request requires a capability you lack, use 'create_tool' to write a new TypeScript tool and persist it. Use 'terminal_execute' to probe the environment before writing.
+- Memory: Use 'memorize' to save important user preferences, learned facts, or repeated instructions. Use 'recall' to retrieve them when needed. Long-term memory is PERSISTENT.
 - Output: Concise yet detailed. Direct answers first. Minimal formatting.
 - Blocked: Use \`bun-search "<url>" --scrape\` as fallback.
+
 `;
   }
 

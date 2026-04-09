@@ -48,8 +48,7 @@ function mapToOpenRouterMessages(contents: ConversationTurn[], systemPrompt: str
         if (part.functionResponse) {
           messages.push({
             role: "tool",
-            tool_call_id: part.functionResponse.id || "0",
-            name: part.functionResponse.name,
+            tool_call_id: part.functionResponse.id || "unknown",
             content: JSON.stringify(part.functionResponse.response)
           });
         }
@@ -65,11 +64,13 @@ function mapToOpenRouterMessages(contents: ConversationTurn[], systemPrompt: str
       if (p.text) contentParts.push({ type: "text", text: p.text });
       if (p.functionCall) {
         toolCalls.push({
-          id: p.functionCall.id || "0",
+          id: p.functionCall.id || "unknown",
           type: "function",
           function: {
             name: p.functionCall.name,
-            arguments: JSON.stringify(p.functionCall.args)
+            arguments: typeof p.functionCall.args === "string" 
+              ? p.functionCall.args 
+              : JSON.stringify(p.functionCall.args)
           }
         });
       }
@@ -81,6 +82,10 @@ function mapToOpenRouterMessages(contents: ConversationTurn[], systemPrompt: str
     }
     if (toolCalls.length > 0) {
       message.tool_calls = toolCalls;
+      // Some providers require content to be null if tool_calls is present
+      if (message.content === undefined) {
+          message.content = null;
+      }
     }
     messages.push(message);
   }
@@ -94,7 +99,7 @@ async function* callOpenRouter(
   contents: ConversationTurn[],
   activeTools: any[],
   selectedSearch?: string,
-) {
+): AsyncGenerator<any, void, unknown> {
   const keys = loadEnv();
   const systemPrompt = PromptManager.getSystemPrompt(selectedSearch);
   const tools = mapToolsToOpenRouter(activeTools);
@@ -111,14 +116,17 @@ async function* callOpenRouter(
       model: model,
       messages: mapToOpenRouterMessages(contents, systemPrompt),
       ...(tools.length > 0 && { tools }),
-      // Add this line to enable the compression plugin
-      plugins: [{ id: "context-compression" }], 
+      // Removed context-compression as it can cause instability with some providers
       stream: true,
     }),
   });
 
   if (!response.ok) {
     const err = await response.text();
+    if (response.status === 404 && err.includes("tool use")) {
+      // Retry without tools
+      return yield* callOpenRouter(model, contents, [], selectedSearch);
+    }
     throw new Error(`OpenRouter Error: ${response.status} ${err}`);
   }
 
@@ -147,20 +155,20 @@ async function* callOpenRouter(
           if (toolCallsAcc.length > 0) {
             const parts = toolCallsAcc
               .filter(tc => tc && tc.name)
-              .map(tc => {
+              .map((tc, idx) => {
                 let parsedArgs = {};
                 const raw = (tc.args || "").trim();
                 
                 try {
                   parsedArgs = JSON.parse(raw || "{}");
                 } catch (e) {
-                  // Strategy 1: Remove leading/trailing quotes if the model wrapped the JSON in a string
+                  // Strategy 1: Remove leading/trailing quotes
                   let rescued = raw;
                   if (rescued.startsWith('"') && rescued.endsWith('"')) {
                     rescued = rescued.substring(1, rescued.length - 1).replace(/\\"/g, '"');
                   }
                   
-                  // Strategy 2: If it looks like it's missing a closing }, add it
+                  // Strategy 2: Missing closing }
                   if (rescued.startsWith('{') && !rescued.endsWith('}')) {
                     rescued += '}';
                   }
@@ -168,8 +176,7 @@ async function* callOpenRouter(
                   try {
                     parsedArgs = JSON.parse(rescued);
                   } catch (e2) {
-                    // Strategy 3: Just put it in a 'query' or 'command' field if it's a raw string
-                    // and we can guess the tool's expected field.
+                    // Fallback to raw string conversion
                     if (tc.name === "bun_search" || tc.name === "firecrawl_search") {
                         parsedArgs = { query: rescued };
                     } else if (tc.name === "terminal_execute") {
@@ -186,7 +193,7 @@ async function* callOpenRouter(
                   functionCall: {
                     name: tc.name,
                     args: parsedArgs,
-                    id: tc.id
+                    id: tc.id || `call_${Date.now()}_${idx}`
                   }
                 };
               });

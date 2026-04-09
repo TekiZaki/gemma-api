@@ -12,8 +12,9 @@ import {
 
 import { PromptManager, supportsThinking } from "../config";
 import { getStream } from "../ai/transport";
-import { toolHandlers } from "./handlers";
-import { toolDefinitions } from "./definitions";
+import { getToolHandlers } from "./handlers";
+import { getToolDefinitions } from "./definitions";
+import { loadPlugins } from "./plugin-manager";
 import type { ConversationTurn, UsageAccumulator, SessionStats } from "../types";
 import { AppState } from "../types";
 
@@ -51,16 +52,17 @@ export async function handleToolCalls(
 
   const parts: any[] = [];
   const interactiveCalls = functionCalls.filter(
-    (c: any) => c.name === "terminal_execute",
+    (c: any) => c.name === "terminal_execute" || c.name === "create_tool",
   );
   const nonInteractiveCalls = functionCalls.filter(
-    (c: any) => c.name !== "terminal_execute",
+    (c: any) => c.name !== "terminal_execute" && c.name !== "create_tool",
   );
 
   const nonInteractiveResults = await Promise.all(
     nonInteractiveCalls.map(async (call: any) => {
       const { name, args, id } = call;
-      const handler = toolHandlers[name];
+      const handlers = getToolHandlers();
+      const handler = handlers[name];
       if (!handler) {
         return {
           functionResponse: {
@@ -80,7 +82,8 @@ export async function handleToolCalls(
 
   for (const call of interactiveCalls) {
     const { name, args, id } = call;
-    const handler = toolHandlers[name];
+    const handlers = getToolHandlers();
+    const handler = handlers[name];
     if (!handler) continue;
     printCard({
       title: "Action Required",
@@ -126,7 +129,7 @@ export async function handleToolCalls(
     if (selectedSearch === "GOOGLE") {
       activeTools = [{ googleSearch: {} }];
     } else {
-      activeTools = [...toolDefinitions];
+      activeTools = getToolDefinitions();
     }
   }
 

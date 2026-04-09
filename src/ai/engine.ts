@@ -14,6 +14,7 @@ import type {
   UsageAccumulator,
   SessionStats,
 } from "../types";
+import { MemoryManager } from "./memory";
 
 
 // ─── Run Turn ─────────────────────────────────────────────────────────────────
@@ -40,7 +41,17 @@ export async function runTurn(
   let spinnerPromise: Promise<void> = Promise.resolve();
 
   try {
-    contents.push({ role: "user", parts: [{ text: prompt }] });
+    // ─── Long-Term Memory Recall ──────────────────────────────────────────────
+    const memories = MemoryManager.getInstance().recall(prompt);
+    if (memories.length > 0) {
+      const memoryContext = memories
+        .map(m => `[RECALLED_MEMORY] (${m.timestamp}): ${m.fact}`)
+        .join("\n");
+      // Inject as a system hint at the start of THIS turn
+      contents.push({ role: "user", parts: [{ text: `System Note: Relevant memories found:\n${memoryContext}\n\nProceed with my request: ${prompt}` }] });
+    } else {
+      contents.push({ role: "user", parts: [{ text: prompt }] });
+    }
 
     spinnerPromise = silent
       ? Promise.resolve()

@@ -1,63 +1,102 @@
+import { createToolDefinition, dynamicDefinitions } from "./plugin-manager";
+
 // ─── Tool Schemas ─────────────────────────────────────────────────────────────
 
-export const toolDefinitions = [
+const staticTools = [
   {
-    functionDeclarations: [
-      {
-        name: "terminal_execute",
-        description: "Executes terminal commands. Use 'date' for system time.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            command: { type: "STRING", description: "The command to execute." },
-          },
-          required: ["command"],
+    name: "terminal_execute",
+    description: "Executes terminal commands. Use 'date' for system time.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        command: { type: "STRING", description: "The command to execute." },
+      },
+      required: ["command"],
+    },
+  },
+  {
+    name: "bun_search",
+    description: "Web search (snippets only). Must follow with 'scrape_url' for full content.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        query: { type: "STRING", description: "The search query." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "firecrawl_search",
+    description: "Deep search/crawl. Returns clean markdown data.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        query: { type: "STRING", description: "The search query." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "read_file",
+    description: "Reads a local file.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        path: { type: "STRING", description: "Path to file." },
+      },
+      required: ["path"],
+    },
+  },
+  {
+    name: "scrape_url",
+    description: "Extracts full text from a URL. Mandatory step after search to read the actual content.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        url: { type: "STRING", description: "The full URL to scrape." },
+      },
+      required: ["url"],
+    },
+  },
+  {
+    name: "memorize",
+    description: "Persist important information across conversations. Use this for user preferences, learned facts, or repeated instructions.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        fact: { type: "STRING", description: "The piece of information to remember." },
+        tags: { 
+          type: "ARRAY", 
+          items: { type: "STRING" }, 
+          description: "Optional labels for organization." 
         },
       },
-      {
-        name: "bun_search",
-        description: "Web search (snippets only). Must follow with 'scrape_url' for full content.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            query: { type: "STRING", description: "The search query." },
-          },
-          required: ["query"],
-        },
+      required: ["fact"],
+    },
+  },
+  {
+    name: "recall",
+    description: "Search long-term memory for relevant facts or preferences.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        query: { type: "STRING", description: "Keywords to search for in memory." },
       },
-      {
-        name: "firecrawl_search",
-        description: "Deep search/crawl. Returns clean markdown data.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            query: { type: "STRING", description: "The search query." },
-          },
-          required: ["query"],
-        },
-      },
-      {
-        name: "read_file",
-        description: "Reads a local file.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            path: { type: "STRING", description: "Path to file." },
-          },
-          required: ["path"],
-        },
-      },
-      {
-        name: "scrape_url",
-        description: "Extracts full text from a URL. Mandatory step after search to read the actual content.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            url: { type: "STRING", description: "The full URL to scrape." },
-          },
-          required: ["url"],
-        },
-      },
-    ],
+      required: ["query"],
+    },
   },
 ];
+
+export const getToolDefinitions = () => [
+  {
+    functionDeclarations: [
+      ...staticTools,
+      createToolDefinition,
+      ...dynamicDefinitions
+    ]
+  }
+];
+
+// For backward compatibility if needed, though we should transition to getToolDefinitions()
+export const toolDefinitions = getToolDefinitions();
+

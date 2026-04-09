@@ -84,9 +84,21 @@ export async function handleCommand(
     const modelArg = parts[1];
 
     if (!modelArg) {
-      // Interactive selector
+      // Clear the current prompt line visually before rendering the menu
+      process.stdout.write("\r\x1b[2K");
+
+      // PAUSE readline AND detach its keypress listeners
       rl.pause();
+      const oldListeners = process.stdin.listeners("keypress");
+      process.stdin.removeAllListeners("keypress");
+
+      // Run the interactive selector
       const selected = await selectModel(AVAILABLE_MODELS);
+
+      // RESTORE readline keypress listeners and resume
+      oldListeners.forEach((listener) =>
+        process.stdin.on("keypress", listener as any),
+      );
       rl.resume();
 
       if (selected && selected !== state.model) {

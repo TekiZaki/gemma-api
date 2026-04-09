@@ -11,6 +11,8 @@ import { resolveSearchFeature, readStdin, handleCommand } from "./commands";
 import { AppState, SessionStats as SessionStatsClass } from "./types";
 import type { SessionStats } from "./types";
 import { DIM, AMBER, RESET } from "./ui/theme";
+import { loadPlugins } from "./tools/plugin-manager";
+
 
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -22,6 +24,10 @@ async function main() {
 
   // Initialize state singleton
   const state = AppState.initialize(config.model);
+
+  // Load dynamic plugins
+  await loadPlugins();
+
 
   // Initialize session stats
   const stats = new SessionStatsClass();
@@ -48,7 +54,7 @@ async function main() {
     input,
     output,
     completer: (line: string): [string[], string] => {
-      const completions = [
+      const commands = [
         "/reset",
         "!clear",
         "/model",
@@ -63,8 +69,18 @@ async function main() {
         "exit",
         "quit",
       ];
-      const hits = completions.filter((c) => c.startsWith(line));
-      return [hits.length ? hits : line === "/" ? completions : [], line];
+
+      // Handle model autocomplete
+      if (line.startsWith("/model ") || line.startsWith("!model ")) {
+        const prefix = line.substring(0, 7); // "/model " or "!model "
+        const search = line.substring(7).trim();
+        const modelHits = AVAILABLE_MODELS.filter((m) => m.startsWith(search));
+        return [modelHits.map((m) => prefix + m), line];
+      }
+
+      // Handle standard command autocomplete
+      const hits = commands.filter((c) => c.startsWith(line));
+      return [hits.length ? hits : line === "/" ? commands : [], line];
     },
   });
 
@@ -76,6 +92,7 @@ async function main() {
   
   await runTurn(initPrompt, ai, history.getHistory(), rl, stats, {
     silent: true,
+    noTools: true,
   });
 
 

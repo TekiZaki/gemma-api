@@ -4,6 +4,7 @@ import { parse } from "node-html-parser";
 import { AMBER, DIM, RESET } from "../ui/theme";
 import { printCard } from "../ui/components";
 import type { ToolResult } from "../types";
+import { MemoryManager } from "../ai/memory";
 
 // ─── Tool Implementations ─────────────────────────────────────────────────────
 
@@ -123,12 +124,44 @@ export const readFile = async ({ path }: { path: string }): Promise<ToolResult> 
   }
 };
 
+export const memorize = async ({ fact, tags }: { fact: string, tags?: string[] }): Promise<ToolResult> => {
+  try {
+    MemoryManager.getInstance().memorize(fact, tags);
+    return { output: "Memory successfully persisted." };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+};
+
+export const recall = async ({ query }: { query: string }): Promise<ToolResult> => {
+  try {
+    const results = MemoryManager.getInstance().recall(query);
+    return { results };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+};
+
+import { createToolHandler, dynamicHandlers } from "./plugin-manager";
+
 // ─── Tool Handlers Registry ───────────────────────────────────────────────────
 
-export const toolHandlers: Record<string, (args: any) => Promise<ToolResult>> = {
+const staticHandlers: Record<string, (args: any) => Promise<ToolResult>> = {
   terminal_execute: terminalExecute,
   bun_search: bunSearch,
   firecrawl_search: firecrawlSearch,
   read_file: readFile,
   scrape_url: scrapeUrl,
+  create_tool: createToolHandler,
+  memorize: memorize,
+  recall: recall,
 };
+
+export const getToolHandlers = () => ({
+  ...staticHandlers,
+  ...dynamicHandlers
+});
+
+// For backward compatibility
+export const toolHandlers = getToolHandlers();
+
