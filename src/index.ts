@@ -12,6 +12,7 @@ import { AppState, SessionStats as SessionStatsClass } from "./types";
 import type { SessionStats } from "./types";
 import { DIM, AMBER, RESET } from "./ui/theme";
 import { loadPlugins } from "./tools/plugin-manager";
+import { readInputWithSuggestions } from "./ui/input";
 
 
 
@@ -53,35 +54,6 @@ async function main() {
   const rl = readLine.createInterface({
     input,
     output,
-    completer: (line: string): [string[], string] => {
-      const commands = [
-        "/reset",
-        "!clear",
-        "/model",
-        "!model",
-        "/save",
-        "!save",
-        "/load",
-        "!load",
-        "!bun",
-        "!firecrawl",
-        "!google",
-        "exit",
-        "quit",
-      ];
-
-      // Handle model autocomplete
-      if (line.startsWith("/model ") || line.startsWith("!model ")) {
-        const prefix = line.substring(0, 7); // "/model " or "!model "
-        const search = line.substring(7).trim();
-        const modelHits = AVAILABLE_MODELS.filter((m) => m.startsWith(search));
-        return [modelHits.map((m) => prefix + m), line];
-      }
-
-      // Handle standard command autocomplete
-      const hits = commands.filter((c) => c.startsWith(line));
-      return [hits.length ? hits : line === "/" ? commands : [], line];
-    },
   });
 
   // Initialize history manager
@@ -129,7 +101,7 @@ async function main() {
     );
     try {
       while (true) {
-        const answer = await rl.question(`${AMBER}?> ${RESET}`);
+        const answer = await readInputWithSuggestions(`${AMBER}?> ${RESET}`);
 
         const cleanAnswer = answer.trim();
         if (!cleanAnswer) continue;

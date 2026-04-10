@@ -16,7 +16,6 @@ export const AVAILABLE_MODELS = [
   "gemma-4-31b-it",
 
   // OpenRouter model list
-  "arcee-ai/trinity-mini:free",
   "liquid/lfm-2.5-1.2b-instruct:free",
   "nvidia/nemotron-3-nano-30b-a3b:free",
   "z-ai/glm-4.5-air:free",
