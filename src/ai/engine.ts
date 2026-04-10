@@ -1,9 +1,10 @@
 // ---
 // Summary:
-// - Purpose: Core AI turn orchestration — streams responses, injects memory context, delegates tool execution.
-// - Role: Bridges transport (streaming), memory (recall), and tools (executor); renders markdown output and usage stats.
+// - Purpose: Core AI turn orchestration — streams responses, injects memory/session context, delegates tool execution.
+// - Role: Bridges transport (streaming), memory (recall), session clock (time events), and tools (executor);
+//          renders markdown output and usage stats.
 // - Used by: index.ts (main loop), commands.ts (reset ack), executor.ts (recursive tool turns).
-// - Depends on: transport, memory, tools/executor, ui/components, ui/theme, types.
+// - Depends on: transport, memory, session, tools/executor, ui/components, ui/theme, types.
 // ---
 import { GoogleGenAI } from "@google/genai";
 import type * as readLine from "readline/promises";
@@ -11,7 +12,7 @@ import { marked } from "../ui/theme";
 import { AMBER, BOLD, RESET, DIM } from "../ui/theme";
 import { showSpinner } from "../ui/components";
 
-import { printError, printUsage } from "../ui/components";
+import { printError, printUsage, printResponse } from "../ui/components";
 import { AppState } from "../types";
 import { getStream } from "./transport";
 import { handleToolCalls } from "../tools/executor";
@@ -22,6 +23,7 @@ import type {
   SessionStats,
 } from "../types";
 import { MemoryManager } from "./memory";
+import { SessionClock } from "./session";
 
 
 // ─── Run Turn ─────────────────────────────────────────────────────────────────
@@ -48,6 +50,43 @@ export async function runTurn(
   let spinnerPromise: Promise<void> = Promise.resolve();
 
   try {
+    // ─── Session Boundary Events ──────────────────────────────────────────────
+    const sessionClock = SessionClock.getInstance();
+
+    if (sessionClock.hasDateChanged(now)) {
+      // Day rolled over — model must know the date context shifted
+      contents.push({
+        role: "user",
+        parts: [{
+          text: [
+            `[SYSTEM_EVENT::SESSION_BOUNDARY]`,
+            `type: date_change`,
+            `from: ${sessionClock.fmt(sessionClock.getLast()!)}`,
+            `to:   ${sessionClock.fmt(now)}`,
+          ].join("\n"),
+        }],
+      });
+    } else if (sessionClock.hasIdleGap(now, 60)) {
+      // Long idle (≥ 1 h) — remind model the user is resuming after a gap
+      const diffMin = Math.round(
+        (now.getTime() - sessionClock.getLast()!.getTime()) / 60_000
+      );
+      contents.push({
+        role: "user",
+        parts: [{
+          text: [
+            `[SYSTEM_EVENT::IDLE_RESUME]`,
+            `type: idle_gap`,
+            `elapsed: ${diffMin} minutes`,
+            `resumed: ${sessionClock.fmt(now)}`,
+          ].join("\n"),
+        }],
+      });
+    }
+
+    // Advance the clock *after* all event checks
+    sessionClock.update(now);
+
     // ─── Long-Term Memory Recall ──────────────────────────────────────────────
     const memories = MemoryManager.getInstance().recall(prompt);
     if (memories.length > 0) {
@@ -57,7 +96,8 @@ export async function runTurn(
       // Inject as a system hint at the start of THIS turn
       contents.push({ role: "user", parts: [{ text: `System Note: Relevant memories found:\n${memoryContext}\n\nProceed with my request: ${prompt}` }] });
     } else {
-      contents.push({ role: "user", parts: [{ text: prompt }] });
+      const timeContext = now.toLocaleString("en-ID", { timeZone: "Asia/Jakarta" });
+      contents.push({ role: "user", parts: [{ text: `[SYSTEM_TIME: ${timeContext}]\n${prompt}` }] });
     }
 
     spinnerPromise = silent
@@ -100,18 +140,15 @@ export async function runTurn(
         .join("");
 
       if (fullText && !silent) {
-        process.stdout.write(`\n${AMBER}${BOLD} RESPONSE ${RESET}\n`);
-        console.log((await marked.parse(fullText)).trim());
+        const rendered = (await marked.parse(fullText)).trim();
+        printResponse(rendered);
       }
 
 
       if (!response) return;
 
-      if (response.usageMetadata) {
-        usageAcc.p += response.usageMetadata.promptTokenCount || 0;
-        usageAcc.c += response.usageMetadata.candidatesTokenCount || 0;
-        stats.accumulate(response.usageMetadata);
-      }
+      // Removed redundant usage accumulation here (moved to handleToolCalls or handled per-turn)
+
 
       if (response.candidates?.[0]?.content) {
         response.candidates[0].content.parts = mergedParts;

@@ -146,6 +146,18 @@ export function printCard(options: {
   }
 }
 
+export function printResponse(text: string): void {
+  const box = boxen(text, {
+    padding: { top: 0, bottom: 0, left: 1, right: 1 },
+    margin: { top: 1, bottom: 0, left: 0, right: 0 },
+    borderStyle: "round",
+    borderColor: "#FFBF00", // AMBER
+    dimBorder: true,
+  });
+
+  console.log(box);
+}
+
 export function printAction(name: string, args: any): void {
   const entries = Object.entries(args || {});
   const argLines = entries.length > 0 

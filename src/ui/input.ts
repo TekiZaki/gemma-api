@@ -8,6 +8,7 @@
 import * as readLine from "readline";
 import { AMBER, RESET, DIM, BOLD } from "./theme";
 import { AVAILABLE_MODELS } from "../config";
+import { getVisibleLength } from "./components";
 
 const COMMANDS = [
   "/reset",
@@ -69,15 +70,20 @@ export async function readInputWithSuggestions(prompt: string): Promise<string> 
 
       // 5. Render suggestions if any
       if (suggestions.length > 0) {
-        process.stdout.write("\x1b[s"); // Save cursor position (standard ANSI)
-
-        const visibleSuggestions = suggestions.slice(0, 8); 
+        const visibleSuggestions = suggestions.slice(0, 8);
         for (const s of visibleSuggestions) {
-          process.stdout.write(`\n${DIM}  ${s}${RESET}`);
+          process.stdout.write(`\n\x1b[2K${DIM}  ${s}${RESET}`);
         }
+
+        // 6. Move cursor back UP to the prompt line
+        process.stdout.write(`\x1b[${visibleSuggestions.length}A`);
+
+        // 7. Restore horizontal position
+        const visiblePromptLen = getVisibleLength(prompt);
+        const cursorCol = visiblePromptLen + cursorPosition;
+        process.stdout.write(`\r\x1b[${cursorCol}C`);
         
         lastSuggestionCount = visibleSuggestions.length;
-        process.stdout.write("\x1b[u"); // Restore cursor position (standard ANSI)
       }
     };
 
@@ -171,8 +177,9 @@ export async function readInputWithSuggestions(prompt: string): Promise<string> 
 
     const cleanup = () => {
       process.stdin.removeListener("keypress", onKeypress);
+      // NOTE: do NOT call stdin.pause() here — readline's rl.question() needs
+      // stdin to stay open. Raw mode is disabled so readline can take over.
       if (process.stdin.isTTY) process.stdin.setRawMode(false);
-      process.stdin.pause();
     };
 
     if (process.stdin.isTTY) {
@@ -183,5 +190,42 @@ export async function readInputWithSuggestions(prompt: string): Promise<string> 
     process.stdin.on("keypress", onKeypress);
 
     render();
+  });
+}
+
+/**
+ * Single-keypress yes/no prompt that stays in raw mode throughout.
+ * Avoids all readline ownership conflicts — never disables raw mode,
+ * never hands stdin to a readline instance.
+ *
+ * Returns true only when the user presses 'y' / 'Y'.
+ * Any other key (including Enter / N / Esc / Ctrl-C) → false.
+ */
+export async function askYesNo(question: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    // Ensure raw mode is active (it should already be, but be explicit).
+    if (process.stdin.isTTY) process.stdin.setRawMode(true);
+    process.stdin.resume();
+    readLine.emitKeypressEvents(process.stdin);
+
+    process.stdout.write(question);
+
+    const onKey = (str: string, key: any) => {
+      process.stdin.removeListener("keypress", onKey);
+
+      const ch = (str || "").toLowerCase();
+
+      // Echo the pressed character and move to next line.
+      process.stdout.write(`${ch}\n`);
+
+      // Ctrl-C → exit immediately, consistent with rest of app.
+      if (key?.ctrl && key?.name === "c") {
+        process.exit();
+      }
+
+      resolve(ch === "y");
+    };
+
+    process.stdin.on("keypress", onKey);
   });
 }

@@ -17,9 +17,17 @@ import { MemoryManager } from "../ai/memory";
 
 export const terminalExecute = async ({ command }: { command: string }): Promise<ToolResult> => {
   if (!command) return { error: "No command provided." };
+  
+  // Windows compatibility: 'date' command in cmd.exe is interactive and fails.
+  // We swap it for PowerShell's non-interactive version if on Windows.
+  let finalCommand = command;
+  if (process.platform === "win32" && command.trim().toLowerCase() === "date") {
+    finalCommand = "powershell -Command Get-Date";
+  }
+
   try {
-    const result = await $`${{ raw: command }}`.text();
-    return { output: result };
+    const result = await $`${{ raw: finalCommand }}`.text();
+    return { output: result.trim() }; // Trim to avoid boxen rendering glitches
   } catch (err: any) {
     return { error: err.message };
   }

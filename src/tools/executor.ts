@@ -15,6 +15,7 @@ import {
   printCard,
   printAction,
   printObservation,
+  printResponse,
 } from "../ui/components";
 
 import { PromptManager, supportsThinking } from "../config";
@@ -24,6 +25,9 @@ import { getToolDefinitions } from "./definitions";
 import { loadPlugins } from "./plugin-manager";
 import type { ConversationTurn, UsageAccumulator, SessionStats } from "../types";
 import { AppState } from "../types";
+import { askYesNo } from "../ui/input";
+
+
 
 // ─── Tool Call Executor ───────────────────────────────────────────────────────
 
@@ -58,15 +62,39 @@ export async function handleToolCalls(
   contents.push(response.candidates[0].content);
 
   const parts: any[] = [];
-  const interactiveCalls = functionCalls.filter(
-    (c: any) => c.name === "terminal_execute" || c.name === "create_tool",
-  );
+  const SAFE_COMMANDS = new Set(["date", "whoami", "pwd", "ls", "dir", "time"]);
+
+  /** Returns true for commands that should never require user approval. */
+  const isAutoApproved = (call: any): boolean => {
+    if (call.name !== "terminal_execute") return false;
+    const cmd = (call.args?.command || "").trim();
+    const base = cmd.toLowerCase().split(" ")[0];
+    // Safe builtins
+    if (SAFE_COMMANDS.has(base)) return true;
+    // Running plugin scripts: `bun plugins/<anything>`
+    if (/^bun\s+plugins\//i.test(cmd)) return true;
+    return false;
+  };
+
+  const interactiveCalls = functionCalls.filter((c: any) => {
+    if (c.name === "create_tool") return true;
+    if (c.name === "terminal_execute") return !isAutoApproved(c);
+    return false;
+  });
+
+  const autoApprovableCalls = functionCalls.filter((c: any) => isAutoApproved(c));
+
+
   const nonInteractiveCalls = functionCalls.filter(
-    (c: any) => c.name !== "terminal_execute" && c.name !== "create_tool",
+    (c: any) =>
+      c.name !== "terminal_execute" &&
+      c.name !== "create_tool" &&
+      !autoApprovableCalls.includes(c),
   );
 
+
   const nonInteractiveResults = await Promise.all(
-    nonInteractiveCalls.map(async (call: any) => {
+    [...nonInteractiveCalls, ...autoApprovableCalls].map(async (call: any) => {
       const { name, args, id } = call;
       const handlers = getToolHandlers();
       const handler = handlers[name];
@@ -106,12 +134,10 @@ export async function handleToolCalls(
       console.log(`${DIM}(Auto-approved because input was piped)${RESET}`);
       authorized = true;
     } else {
-      const answer = await rl.question(
+      // Single-keypress prompt — stays in raw mode, no readline ownership transfer.
+      authorized = await askYesNo(
         `${AMBER}${BOLD}Authorize execution?${RESET} ${DIM}[y/N]${RESET} `,
       );
-      if (answer.trim().toLowerCase() === "y") {
-        authorized = true;
-      }
     }
 
     if (!authorized) {
@@ -170,8 +196,8 @@ export async function handleToolCalls(
       .join("");
 
     if (fullText) {
-      process.stdout.write(`\n${AMBER}${BOLD} RESPONSE ${RESET}\n`);
-      console.log((await marked.parse(fullText)).trim());
+      const rendered = (await marked.parse(fullText)).trim();
+      printResponse(rendered);
     }
 
     if (!chunkResponse) return response;

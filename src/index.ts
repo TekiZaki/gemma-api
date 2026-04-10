@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 // ---
 // Summary:
 // - Purpose: Application entry point — bootstraps env, config, AI client, and routes to REPL or single-shot mode.
@@ -5,7 +6,6 @@
 // - Used by: CLI bin (`gemma-api` command).
 // - Depends on: config, ai/engine, ai/history, commands, ui/components, ui/input, tools/plugin-manager.
 // ---
-#!/usr/bin/env bun
 import { GoogleGenAI } from "@google/genai";
 import * as readLine from "readline/promises";
 import { stdin as input, stdout as output } from "process";
@@ -66,14 +66,7 @@ async function main() {
   // Initialize history manager
   const history = new HistoryManager();
   
-  // Combine time sync and init into one turn to avoid double user roles
-  const initPrompt = `${PromptManager.getSystemSyncMessage()}\n\nSYSTEM_INIT_SYNC_REQUEST`;
-  
-  await runTurn(initPrompt, ai, history.getHistory(), rl, stats, {
-    silent: true,
-    noTools: true,
-  });
-
+  // No startup sync turns (prevents token bloat).
 
   // Build prompt from args
   let promptFromArgs = process.argv.slice(2).join(" ");

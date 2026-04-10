@@ -23,7 +23,7 @@ const staticTools = [
   },
   {
     name: "bun_search",
-    description: "Web search (snippets only). Must follow with 'scrape_url' for full content.",
+    description: "Primary web search tool (BUN mode). Call this FIRST for any research query — returns result snippets and URLs. Always follow up with scrape_url on the most relevant URL to read full content.",
     parameters: {
       type: "OBJECT",
       properties: {

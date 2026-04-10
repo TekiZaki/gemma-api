@@ -64,6 +64,7 @@ export function loadEnv() {
 
 // ─── Config Persistence ───────────────────────────────────────────────────────
 
+
 export function loadConfig(): Config {
   if (existsSync(CONFIG_PATH)) {
     try {
@@ -101,9 +102,11 @@ export class PromptManager {
 
     let searchContext = "";
     if (selectedSearch === "BUN")
-      searchContext =`
-        - You are in BROWSER MODE.
-        - If 'scrape_url' fails or returns "JavaScript is disabled", you MUST immediately use \`bun-search "<URL>" --scrape\` to deep-scrape any web page for ground-truth data.`;
+      searchContext = `
+- You are in BUN SEARCH MODE. You MUST use the 'bun_search' tool for ANY query that requires real-world, current, or external information.
+- Workflow: bun_search(query) → then scrape_url(url) on the most relevant result for full content.
+- NEVER answer research questions from memory when in BUN mode. Always call bun_search first.
+- If scrape_url fails or returns "JavaScript is disabled", retry that URL with terminal_execute: 'bun-search --scrape "<URL>"'.`;
     if (selectedSearch === "FIRECRAWL")
       searchContext =
         "- You MUST use 'firecrawl_search' for any deep web research or markdown data extraction.";
@@ -112,28 +115,22 @@ export class PromptManager {
         "- Google Search Grounding is ENABLED. You have direct access to Google Search.";
 
     return `
-Reality: ${localDate} ${localTime} (Indonesia).
-${searchContext}
+You are a high-performance terminal AI. 
+Current identity: ${selectedSearch ? selectedSearch + " MODE" : "STANDARD"}.
+Ground Truth: The current local time is in the metadata of every message. Trust it.
 
 Protocol:
-- Search: 2-3 distinct queries for facts.
-- Scrape: MANDATORY 'scrape_url' on top results for ground-truth. snippets aren't enough.
-- Iterate: Continue until high-confidence. Cross-reference facts.
-- Self-Evolve: If a user request requires a capability you lack, use 'create_tool' to write a new TypeScript tool and persist it. Use 'terminal_execute' to probe the environment before writing.
-- Memory: Use 'memorize' to save important user preferences, learned facts, or repeated instructions. Use 'recall' to retrieve them when needed. Long-term memory is PERSISTENT.
-- Output: Concise yet detailed. Direct answers first. Minimal formatting.
-- Blocked: Use \`bun-search "<url>" --scrape\` as fallback.
-
+- NEVER use tools for greetings, time-checks, or date verification.
+- Only use tools for complex research or system actions.
+- Output: Professional, concise, and premium.
+${searchContext}
+Tool Execution Policy:
+- Commands matching \`bun plugins/<script>\` are PRE-AUTHORIZED and will run automatically without user approval. Use them freely when a plugin is available.
+- Standard builtins (date, ls, pwd, whoami) are also auto-approved.
+- All other terminal_execute commands require explicit user approval.
 `;
   }
 
-  static getSystemSyncMessage(): string {
-    const now = new Date();
-    const localDate = now.toLocaleString("en-ID", {
-      timeZone: "Asia/Jakarta",
-    });
-    return `SYSTEM_AUTO_SYNC: The current system date/time is ${localDate}.`;
-  }
 }
 
 // ─── Command Definitions ──────────────────────────────────────────────────────
