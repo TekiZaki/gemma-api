@@ -21,8 +21,11 @@ export const terminalExecute = async ({ command }: { command: string }): Promise
   // Windows compatibility: 'date' command in cmd.exe is interactive and fails.
   // We swap it for PowerShell's non-interactive version if on Windows.
   let finalCommand = command;
-  if (process.platform === "win32" && command.trim().toLowerCase() === "date") {
-    finalCommand = "powershell -Command Get-Date";
+  if (process.platform === "win32") {
+    const cmdLower = command.trim().toLowerCase();
+    if (cmdLower === "date" || cmdLower === "time") {
+      finalCommand = "powershell -Command Get-Date";
+    }
   }
 
   try {

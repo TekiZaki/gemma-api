@@ -12,11 +12,11 @@ import { createToolDefinition, dynamicDefinitions } from "./plugin-manager";
 const staticTools = [
   {
     name: "terminal_execute",
-    description: "Executes terminal commands. Use 'date' for system time.",
+    description: "Executes terminal commands on Windows (PowerShell/CMD). If asking for time, use 'Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"'. NEVER use Unix/Bash syntax.",
     parameters: {
       type: "OBJECT",
       properties: {
-        command: { type: "STRING", description: "The command to execute." },
+        command: { type: "STRING", description: "The PowerShell/CMD command to execute." },
       },
       required: ["command"],
     },

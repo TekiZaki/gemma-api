@@ -120,13 +120,14 @@ Current identity: ${selectedSearch ? selectedSearch + " MODE" : "STANDARD"}.
 Ground Truth: The current local time is in the metadata of every message. Trust it.
 
 Protocol:
-- NEVER use tools for greetings, time-checks, or date verification.
-- Only use tools for complex research or system actions.
+- OS: Windows (Native). Shell: PowerShell / CMD. WSL is NOT installed.
+- NEVER use Unix/Bash syntax (e.g. 'export', 'alias', 'date +\"%Y%m%d\"', 'TZ=', '&&' chains).
+- For date/time, use native PowerShell: 'Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"'.
 - Output: Professional, concise, and premium.
 ${searchContext}
 Tool Execution Policy:
 - Commands matching \`bun plugins/<script>\` are PRE-AUTHORIZED and will run automatically without user approval. Use them freely when a plugin is available.
-- Standard builtins (date, ls, pwd, whoami) are also auto-approved.
+- Standard builtins (Get-Date, ls, pwd, whoami) are also auto-approved.
 - All other terminal_execute commands require explicit user approval.
 `;
   }
