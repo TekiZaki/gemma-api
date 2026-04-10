@@ -93,11 +93,10 @@ export async function runTurn(
       const memoryContext = memories
         .map(m => `[RECALLED_MEMORY] (${m.timestamp}): ${m.fact}`)
         .join("\n");
-      // Inject as a system hint at the start of THIS turn
       contents.push({ role: "user", parts: [{ text: `System Note: Relevant memories found:\n${memoryContext}\n\nProceed with my request: ${prompt}` }] });
     } else {
-      const timeContext = now.toLocaleString("en-ID", { timeZone: "Asia/Jakarta" });
-      contents.push({ role: "user", parts: [{ text: `[SYSTEM_TIME: ${timeContext}]\n${prompt}` }] });
+      // Let the System Prompt handle the time. Just push the clean prompt.
+      contents.push({ role: "user", parts: [{ text: prompt }] });
     }
 
     spinnerPromise = silent
@@ -115,7 +114,39 @@ export async function runTurn(
       }
     }
     try {
-      const stream = getStream(state.model, contents, {
+      // --- TOKEN OPTIMIZATION ---
+      // Deep clone and prune the history for the API payload so we don't send 
+      // massive, old scrape data on every subsequent turn.
+      const optimizedContents = contents.map((turn, index) => {
+        // Only prune if it's an older turn (not the current interaction)
+        if (index < contents.length - 2) {
+          return {
+            ...turn,
+            parts: turn.parts.map(part => {
+              if (part.functionResponse && part.functionResponse.response) {
+                const res = part.functionResponse.response;
+                // If the tool returned a massive content string (like scrape_url)
+                if (typeof res.content === 'string' && res.content.length > 300) {
+                  return {
+                    ...part,
+                    functionResponse: {
+                      ...part.functionResponse,
+                      response: { 
+                        ...res, 
+                        content: res.content.slice(0, 300) + "... [Truncated to save tokens]" 
+                      }
+                    }
+                  };
+                }
+              }
+              return part;
+            })
+          };
+        }
+        return turn;
+      });
+      
+      const stream = getStream(state.model, optimizedContents, {
         ai,
         activeTools,
         selectedSearch,

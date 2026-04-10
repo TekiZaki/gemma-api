@@ -33,10 +33,15 @@ export class HistoryManager {
   }
 
   /**
-   * Get the current conversation history.
+   * Get the current conversation history (capped at last 20 turns to prevent token bloat).
    */
   getHistory(): ConversationTurn[] {
-    return this.history; // ← return the real array, not a copy
+    const MAX_TURNS = 20;
+    if (this.history.length > MAX_TURNS) {
+      // Keep the oldest system sync/init messages if any, but slice the rest
+      this.history = this.history.slice(this.history.length - MAX_TURNS);
+    }
+    return this.history; 
   }
 
   /**

@@ -130,14 +130,14 @@ export async function readInputWithSuggestions(prompt: string): Promise<string> 
       } else if (key.name === "up") {
         if (historyIndex < globalHistory.length - 1) {
           historyIndex++;
-          currentInput = globalHistory[historyIndex];
+          currentInput = globalHistory[historyIndex] ?? "";
           cursorPosition = currentInput.length;
           render();
         }
       } else if (key.name === "down") {
         if (historyIndex > 0) {
           historyIndex--;
-          currentInput = globalHistory[historyIndex];
+          currentInput = globalHistory[historyIndex] ?? "";
           cursorPosition = currentInput.length;
           render();
         } else if (historyIndex === 0) {
@@ -161,7 +161,7 @@ export async function readInputWithSuggestions(prompt: string): Promise<string> 
           }
         }
         if (suggestions.length > 0) {
-          currentInput = suggestions[0];
+          currentInput = suggestions[0] ?? "";
           cursorPosition = currentInput.length;
           render();
         }
