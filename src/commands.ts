@@ -1,9 +1,16 @@
+// ---
+// Summary:
+// - Purpose: CLI command parser and search mode resolver for REPL interactions.
+// - Role: Handles `/model`, `/save`, `/load`, `/reset`, exit commands; detects `!bun/!firecrawl/!google` search flags.
+// - Used by: index.ts (REPL loop).
+// - Depends on: config, ui/theme, ui/components, ui/selector, ai/engine, ai/history, types.
+// ---
 import type * as readLine from "readline/promises";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { GoogleGenAI } from "@google/genai";
 import { AMBER, BOLD, DIM, RESET } from "./ui/theme";
-import { printError, printHeader } from "./ui/components";
+import { printError, printHeader, printSuccess, printInfo } from "./ui/components";
 import { selectModel } from "./ui/selector";
 import { runTurn } from "./ai/engine";
 import { HistoryManager } from "./ai/history";
@@ -71,7 +78,7 @@ export async function handleCommand(
     await runTurn("SYSTEM_INIT_ACK", ai, history.getHistory(), rl, stats, {
       silent: true,
     });
-    console.log(`\n${AMBER}Conversation history cleared.${RESET}\n`);
+    printSuccess("Conversation history cleared.");
     return { handled: true, shouldExit: false };
   }
 
@@ -84,37 +91,18 @@ export async function handleCommand(
     const modelArg = parts[1];
 
     if (!modelArg) {
-      // Clear the current prompt line visually before rendering the menu
-      process.stdout.write("\r\x1b[2K");
-
-      // PAUSE readline AND detach its keypress listeners
-      rl.pause();
-      const oldListeners = process.stdin.listeners("keypress");
-      process.stdin.removeAllListeners("keypress");
-
-      // Run the interactive selector
       const selected = await selectModel(AVAILABLE_MODELS);
-
-      // RESTORE readline keypress listeners and resume
-      oldListeners.forEach((listener) =>
-        process.stdin.on("keypress", listener as any),
-      );
-      rl.resume();
 
       if (selected && selected !== state.model) {
         state.model = selected;
         saveConfig({ model: state.model });
         printHeader(state.model);
-        console.log(
-          `\n${AMBER}${BOLD}Switched to ${state.model}${RESET} ${DIM}(saved)${RESET}\n`,
-        );
+        printSuccess(`Switched to ${state.model} (saved)`);
       }
     } else if (AVAILABLE_MODELS.includes(modelArg)) {
       state.model = modelArg;
       saveConfig({ model: state.model });
-      console.log(
-        `\n${AMBER}${BOLD}Switched to ${state.model}${RESET} ${DIM}(saved)${RESET}\n`,
-      );
+      printSuccess(`Switched to ${state.model} (saved)`);
     } else {
       printError(`Invalid model. Available: ${AVAILABLE_MODELS.join(", ")}`);
     }
@@ -128,9 +116,7 @@ export async function handleCommand(
       historyPath,
       JSON.stringify(history.getHistory(), null, 2),
     );
-    console.log(
-      `\n${AMBER}Conversation history saved to ${historyPath}${RESET}\n`,
-    );
+    printSuccess(`Conversation history saved to ${historyPath}`);
     return { handled: true, shouldExit: false };
   }
 
@@ -141,9 +127,7 @@ export async function handleCommand(
       const data = readFileSync(historyPath, "utf-8");
       const parsed = JSON.parse(data);
       history.loadFromJSON(parsed);
-      console.log(
-        `\n${AMBER}Conversation history loaded from ${historyPath}${RESET}\n`,
-      );
+      printSuccess(`Conversation history loaded from ${historyPath}`);
     } else {
       printError(`No history file found at ${historyPath}`);
     }

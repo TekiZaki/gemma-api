@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Dynamic plugin system — hot-loads `.ts` plugins from `plugins/` dir, enables AI self-extension via `create_tool`.
+// - Role: Scans plugins directory, imports with cache-busting timestamps, validates `definition` + `handler` exports.
+// - Used by: index.ts (boot load), handlers.ts (create_tool handler, dynamicHandlers), definitions.ts.
+// - Depends on: fs, path, types (ToolResult).
+// ---
 import { join } from "path";
 import { writeFileSync, existsSync, mkdirSync, readdirSync } from "fs";
 import type { ToolResult } from "../types";

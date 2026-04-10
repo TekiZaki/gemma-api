@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Core TypeScript interfaces and state management classes.
+// - Role: Defines `ConversationTurn`, `ToolResult`, `TurnOptions`, `SessionStats` (token tracking), `AppState` (singleton).
+// - Used by: Every module in the project.
+// - Depends on: None (pure type definitions).
+// ---
 // ─── Core Types ───────────────────────────────────────────────────────────────
 
 export interface Config {

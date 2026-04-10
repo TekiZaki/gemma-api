@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Tool schema definitions — static tool parameter structures for the AI model.
+// - Role: Declares 7 built-in tools (terminal_execute, bun_search, firecrawl_search, read_file, scrape_url, memorize, recall) + create_tool + dynamic plugins.
+// - Used by: engine.ts, executor.ts.
+// - Depends on: plugin-manager (createToolDefinition, dynamicDefinitions).
+// ---
 import { createToolDefinition, dynamicDefinitions } from "./plugin-manager";
 
 // ─── Tool Schemas ─────────────────────────────────────────────────────────────

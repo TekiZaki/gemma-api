@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Conversation history manager — CRUD for conversation turns.
+// - Role: Maintains in-memory array of `ConversationTurn[]`; supports reset, load from JSON, set, and get operations.
+// - Used by: index.ts, commands.ts (save/load), engine.ts (turn context).
+// - Depends on: types (ConversationTurn), config (PromptManager — unused import).
+// ---
 import type { ConversationTurn } from "../types";
 import { PromptManager } from "../config";
 

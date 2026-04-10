@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Tool implementations — actual execution logic for each built-in tool.
+// - Role: terminal_execute (Bun.$), bun_search (bun-search CLI), firecrawl_search (Firecrawl API), scrape_url (fetch + HTML parsing), read_file, memorize, recall.
+// - Used by: executor.ts (getToolHandlers).
+// - Depends on: Bun.$, node-html-parser, ai/memory, ui/theme, ui/components, plugin-manager.
+// ---
 import { $ } from "bun";
 import { readFileSync, existsSync } from "fs";
 import { parse } from "node-html-parser";

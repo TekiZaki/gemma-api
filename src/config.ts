@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Central configuration — env loading, model registry, config persistence, system prompt generation.
+// - Role: Provides `PromptManager` for dynamic system prompts (date, search mode), model capability checks, CLI command definitions.
+// - Used by: index, engine, transport, commands, handlers.
+// - Depends on: fs, path, types (Config, CommandDefinition).
+// ---
 import { join } from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import type { Config, CommandDefinition } from "./types";

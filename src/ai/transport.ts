@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Dual transport layer — unified streaming for Google GenAI and OpenRouter APIs.
+// - Role: `getStream()` abstracts provider differences; OpenRouter path handles SSE parsing, tool-call mapping, and JSON argument rescue.
+// - Used by: engine.ts, executor.ts.
+// - Depends on: config (PromptManager, supportsThinking, isOpenRouterModel, loadEnv), types.
+// ---
 import { GoogleGenAI } from "@google/genai";
 import { PromptManager, supportsThinking, isOpenRouterModel, loadEnv } from "../config";
 import type { ConversationTurn } from "../types";

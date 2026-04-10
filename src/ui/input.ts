@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Custom raw stdin reader with tab-completion, history navigation, and inline command/model suggestions.
+// - Role: Bypasses readline for full control; renders suggestions below prompt, tracks cursor position, manages global history.
+// - Used by: index.ts (REPL input loop).
+// - Depends on: readline (keypress events), theme, config (AVAILABLE_MODELS).
+// ---
 import * as readLine from "readline";
 import { AMBER, RESET, DIM, BOLD } from "./theme";
 import { AVAILABLE_MODELS } from "../config";
@@ -28,25 +35,19 @@ export async function readInputWithSuggestions(prompt: string): Promise<string> 
     let cursorPosition = 0;
 
     const clearSuggestions = () => {
-      if (lastSuggestionCount > 0) {
-        // Since we used \x1b8 in the previous render, we are already back at the prompt.
-        // We just need to clear everything below the current line.
-        process.stdout.write("\x1b7");      // Save current position
-        process.stdout.write("\n\x1b[J");   // Move to next line and clear to bottom of screen
-        process.stdout.write("\x1b8");      // Restore position to the prompt line
-        lastSuggestionCount = 0;
-      }
+      // Clear from current cursor position to end of screen
+      process.stdout.write("\x1b[0J");
+      lastSuggestionCount = 0;
     };
 
     const render = () => {
-      // 1. Clear previous suggestions
-      clearSuggestions();
+      // 1. Move to start of line and clear everything from here down
+      process.stdout.write("\r\x1b[0J");
 
-      // 2. Clear current line and write prompt + input
-      process.stdout.write("\r\x1b[2K");
+      // 2. Write prompt + current input
       process.stdout.write(`${prompt}${currentInput}`);
 
-      // 3. Move cursor to correct position
+      // 3. Move cursor back to the correct position within the input
       const moveLeft = currentInput.length - cursorPosition;
       if (moveLeft > 0) {
         process.stdout.write(`\x1b[${moveLeft}D`);
@@ -66,21 +67,17 @@ export async function readInputWithSuggestions(prompt: string): Promise<string> 
         }
       }
 
-      // 5. Render suggestions
+      // 5. Render suggestions if any
       if (suggestions.length > 0) {
-        // Save cursor position
-        process.stdout.write("\x1b7");
+        process.stdout.write("\x1b[s"); // Save cursor position (standard ANSI)
 
-        process.stdout.write("\n");
-        const visibleSuggestions = suggestions.slice(0, 8); // Show top 8
+        const visibleSuggestions = suggestions.slice(0, 8); 
         for (const s of visibleSuggestions) {
-          process.stdout.write(`${DIM}  ${s}${RESET}\n`);
+          process.stdout.write(`\n${DIM}  ${s}${RESET}`);
         }
         
-        lastSuggestionCount = visibleSuggestions.length + 1;
-
-        // Restore cursor position
-        process.stdout.write("\x1b8");
+        lastSuggestionCount = visibleSuggestions.length;
+        process.stdout.write("\x1b[u"); // Restore cursor position (standard ANSI)
       }
     };
 

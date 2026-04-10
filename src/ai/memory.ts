@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Persistent long-term memory system — memorize and recall facts across sessions.
+// - Role: Singleton managing `memory.json`; keyword-based search over facts and tags, returns top 10 matches sorted by recency.
+// - Used by: engine.ts (auto-recall on turn), handlers.ts (memorize/recall tools).
+// - Depends on: fs, path, config (PROJ_ROOT).
+// ---
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { PROJ_ROOT } from "../config";

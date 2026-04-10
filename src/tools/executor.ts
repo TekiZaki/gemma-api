@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Tool call router — dispatches function calls to handlers, manages authorization, recursive turn continuation.
+// - Role: Separates interactive tools (require user approval) from non-interactive; streams next AI turn after tool results.
+// - Used by: engine.ts (post-response tool check).
+// - Depends on: handlers, definitions, transport, ui/components, ui/theme, config, types.
+// ---
 import { GoogleGenAI } from "@google/genai";
 import type * as readLine from "readline/promises";
 import { AMBER, BOLD, RESET, DIM } from "../ui/theme";

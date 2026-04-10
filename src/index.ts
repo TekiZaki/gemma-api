@@ -1,10 +1,17 @@
+// ---
+// Summary:
+// - Purpose: Application entry point — bootstraps env, config, AI client, and routes to REPL or single-shot mode.
+// - Role: Orchestrates initialization (plugins, history, stats, model sync) and runs the main event loop.
+// - Used by: CLI bin (`gemma-api` command).
+// - Depends on: config, ai/engine, ai/history, commands, ui/components, ui/input, tools/plugin-manager.
+// ---
 #!/usr/bin/env bun
 import { GoogleGenAI } from "@google/genai";
 import * as readLine from "readline/promises";
 import { stdin as input, stdout as output } from "process";
 import { loadEnv, loadConfig, AVAILABLE_MODELS, isOpenRouterModel, PromptManager } from "./config";
 
-import { printHeader, printError } from "./ui/components";
+import { printHeader, printError, printInfo } from "./ui/components";
 import { runTurn } from "./ai/engine";
 import { HistoryManager } from "./ai/history";
 import { resolveSearchFeature, readStdin, handleCommand } from "./commands";
@@ -96,9 +103,7 @@ async function main() {
     rl.close();
   } else {
     // REPL mode
-    console.log(
-      `${DIM}Entering REPL mode. Type 'exit' or 'quit' to end.${RESET}`,
-    );
+    printInfo("Entering REPL mode. Type 'exit' or 'quit' to end.");
     try {
       while (true) {
         const answer = await readInputWithSuggestions(`${AMBER}?> ${RESET}`);

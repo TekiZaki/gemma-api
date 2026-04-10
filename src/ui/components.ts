@@ -1,3 +1,12 @@
+// ---
+// Summary:
+// - Purpose: UI rendering utilities — header, usage stats, spinner, card-based action/observation displays.
+// - Role: Wraps `consola` for status messages, `boxen` for bordered cards, custom spinner with ANSI colors.
+// - Used by: index, engine, executor, commands, handlers.
+// - Depends on: boxen, consola, theme (ANSI colors), types (UsageMetadata).
+// ---
+import boxen from "boxen";
+import { consola } from "consola";
 import { AMBER, BOLD, CHARCOAL, DIM, RESET, EMERALD, SAPPHIRE, SLATE } from "./theme";
 import type { UsageMetadata } from "../types";
 
@@ -30,10 +39,22 @@ export function printUsage(
 
 // ─── Error Display ────────────────────────────────────────────────────────────
 
+// ─── Status Reporting ─────────────────────────────────────────────────────────
+
 export function printError(message: string): void {
-  console.error(
-    `\n${CHARCOAL}\x1b[48;2;255;85;85m ERROR ${RESET} ${message}\n`,
-  );
+  consola.error(message);
+}
+
+export function printSuccess(message: string): void {
+  consola.success(message);
+}
+
+export function printInfo(message: string): void {
+  consola.info(message);
+}
+
+export function printWarn(message: string): void {
+  consola.warn(message);
 }
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -47,7 +68,7 @@ export async function showSpinner(stopCondition: () => boolean): Promise<void> {
       `\r${AMBER}${chars[i % chars.length]}${RESET} Thinking... `,
     );
     i++;
-    await new Promise((r) => setTimeout(r, 80));
+    await new Promise((r) => setTimeout(r, 100));
   }
   process.stdout.write("\r\x1b[K"); // Clear line
 }
@@ -60,16 +81,6 @@ export function getVisibleLength(str: string): number {
   return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").length;
 }
 
-/**
- * Calculates the number of visual lines a string will occupy in the terminal.
- */
-export function getLineHeight(text: string, width: number): number {
-  const lines = text.split("\n");
-  return lines.reduce(
-    (acc, line) => acc + Math.max(1, Math.ceil(getVisibleLength(line) / width)),
-    0,
-  );
-}
 
 function wrapText(text: string, width: number): string[] {
   const lines: string[] = [];
@@ -105,34 +116,33 @@ export function printCard(options: {
   footer?: string;
   color?: string;
 }): void {
-  const { title, lines: rawLines, footer, color = AMBER } = options;
-  const terminalWidth = process.stdout.columns || 80;
-  const contentWidth = terminalWidth - 4; // Space for "│ " and " │"
+  const { title, lines, footer, color = AMBER } = options;
 
-  // Wrap all input lines to fit the terminal
-  const wrappedLines = rawLines.flatMap(line => wrapText(line, contentWidth));
+  // Map ANSI colors to hex for boxen
+  const colorMap: Record<string, string> = {
+    [AMBER]: "#FFBF00",
+    [EMERALD]: "#50C878",
+    [SAPPHIRE]: "#0F52BA",
+    [SLATE]: "#708090",
+    "\x1b[38;2;255;85;85m": "#FF5555",
+  };
 
-  const drawLine = (char: string, length: number) => char.repeat(Math.max(0, length));
+  const borderColor = colorMap[color] || "#708090";
 
-  // Top Border
-  const titlePart = `─ ${title} `;
-  const topDashCount = Math.max(0, terminalWidth - getVisibleLength(titlePart) - 2);
-  console.log(`\n${color}┌${titlePart}${drawLine("─", topDashCount)}┐${RESET}`);
-
-  // Body
-  wrappedLines.forEach((line) => {
-    const visibleLen = getVisibleLength(line);
-    const padding = " ".repeat(Math.max(0, terminalWidth - visibleLen - 3));
-    console.log(`${color}│${RESET} ${line}${padding} ${color}│${RESET}`);
+  const content = lines.join("\n");
+  
+  const box = boxen(content, {
+    title,
+    titleAlignment: "left",
+    padding: { top: 0, bottom: 0, left: 1, right: 1 },
+    borderStyle: "round",
+    borderColor,
+    dimBorder: true,
   });
 
-  // Bottom Border
+  console.log("\n" + box);
   if (footer) {
-    const footerPart = ` ${footer} `;
-    const botDashCount = Math.max(0, terminalWidth - getVisibleLength(footerPart) - 2);
-    console.log(`${color}└${drawLine("─", botDashCount)}${footerPart}┘${RESET}`);
-  } else {
-    console.log(`${color}└${drawLine("─", terminalWidth - 2)}┘${RESET}`);
+    console.log(`${DIM}  ${footer}${RESET}`);
   }
 }
 

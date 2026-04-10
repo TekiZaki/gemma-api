@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Core AI turn orchestration — streams responses, injects memory context, delegates tool execution.
+// - Role: Bridges transport (streaming), memory (recall), and tools (executor); renders markdown output and usage stats.
+// - Used by: index.ts (main loop), commands.ts (reset ack), executor.ts (recursive tool turns).
+// - Depends on: transport, memory, tools/executor, ui/components, ui/theme, types.
+// ---
 import { GoogleGenAI } from "@google/genai";
 import type * as readLine from "readline/promises";
 import { marked } from "../ui/theme";

@@ -1,3 +1,10 @@
+// ---
+// Summary:
+// - Purpose: Visual theme layer — ANSI color constants and `marked` markdown-to-terminal renderer.
+// - Role: Defines Amber/Charcoal palette, configures `marked-terminal` with custom heading, code, link styling.
+// - Used by: All UI files, engine (markdown output), handlers (action/observation display).
+// - Depends on: marked, marked-terminal.
+// ---
 import { Marked } from "marked";
 import { markedTerminal } from "marked-terminal";
 
