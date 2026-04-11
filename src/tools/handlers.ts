@@ -18,19 +18,16 @@ import { MemoryManager } from "../ai/memory";
 export const terminalExecute = async ({ command }: { command: string }): Promise<ToolResult> => {
   if (!command) return { error: "No command provided." };
   
-  // Windows compatibility: 'date' command in cmd.exe is interactive and fails.
-  // We swap it for PowerShell's non-interactive version if on Windows.
   let finalCommand = command;
   if (process.platform === "win32") {
-    const cmdLower = command.trim().toLowerCase();
-    if (cmdLower === "date" || cmdLower === "time") {
-      finalCommand = "powershell -Command Get-Date";
-    }
+    // Escape double quotes in command for powershell wrapper
+    const escaped = command.replace(/"/g, '`"');
+    finalCommand = `powershell -NoProfile -NonInteractive -Command "${escaped}"`;
   }
 
   try {
     const result = await $`${{ raw: finalCommand }}`.text();
-    return { output: result.trim() }; // Trim to avoid boxen rendering glitches
+    return { output: result.trim() };
   } catch (err: any) {
     return { error: err.message };
   }
@@ -42,10 +39,13 @@ export const terminalExecute = async ({ command }: { command: string }): Promise
 export const bunSearch = async ({ query }: { query: string }): Promise<ToolResult> => {
   if (!query) return { error: "No query provided." };
   try {
-    let result = await $`bun-search ${query}`.text();
+    const rawResult = await $`bun-search ${query} --summarize`.quiet();
+    if (rawResult.exitCode !== 0) {
+      return { error: `bun-search failed: ${rawResult.stderr.toString() || 'Unknown error'}` };
+    }
 
     // Filter out status logs if they are mixed in stdout
-    result = result.split("\n")
+    let result = rawResult.stdout.toString().split("\n")
       .filter(line => 
         !line.includes("WebSocket Server") && 
         !line.includes("Chrome Extension") &&
@@ -56,8 +56,6 @@ export const bunSearch = async ({ query }: { query: string }): Promise<ToolResul
       .join("\n")
       .trim();
     return { results: result };
-
-
   } catch (err: any) {
     return { error: err.message };
   }
@@ -98,37 +96,28 @@ export const firecrawlSearch = async ({ query }: { query: string }): Promise<Too
 };
 
 export const scrapeUrl = async ({ url }: { url: string }): Promise<ToolResult> => {
+  if (!url) return { error: "No URL provided." };
   try {
-    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.3856.109" } });
+    const rawResult = await $`bun-search --scrape ${url} --summarize`.quiet();
+    if (rawResult.exitCode !== 0) {
+      return { error: `scrape failed: ${rawResult.stderr.toString() || 'Unknown error'}` };
+    }
+
+    // Filter out status logs if they are mixed in stdout
+    let result = rawResult.stdout.toString().split("\n")
+      .filter(line => 
+        !line.includes("WebSocket Server") && 
+        !line.includes("Chrome Extension") &&
+        !line.includes("⏳") &&
+        !line.includes("✅") &&
+        !line.includes("🌍")
+      )
+      .join("\n")
+      .trim();
     
-    // If we hit a JS-only site or a 403
-    if (!res.ok || res.status === 403 || (await res.clone().text()).includes("JavaScript is disabled")) {
-      // TRIGGER THE BRIDGE
-      const result = await $`bun-search --scrape ${url}`.text();
-      return { url, content: result };
-    }
-
-    const html = await res.text();
-    const root = parse(html);
-
-    // Remove noise
-    root.querySelectorAll("script, style, nav, footer, header, aside").forEach(el => el.remove());
-
-    const text = root.querySelector("main, article, #content, .content, body")
-      ?.text
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 8000); // cap tokens
-
-    return { url, content: text ?? "(no content found)" };
+    return { url, content: result };
   } catch (err: any) {
-    // If fetch throws (e.g. network error), also try the fallback
-    try {
-      const result = await $`bun-search --scrape ${url}`.text();
-      return { url, content: result };
-    } catch (fallbackErr: any) {
-      return { error: `Fetch failed: ${err.message}. Fallback failed: ${fallbackErr.message}` };
-    }
+    return { error: err.message };
   }
 };
 

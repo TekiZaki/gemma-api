@@ -134,6 +134,35 @@ export async function handleCommand(
     return { handled: true, shouldExit: false };
   }
 
+  // Summarize command
+  if (cleanAnswer.toLowerCase() === "/summarize") {
+    const currentHistory = history.getHistory();
+    if (currentHistory.length < 5) {
+      printInfo("History too short to summarize efficiently.");
+      return { handled: true, shouldExit: false };
+    }
+
+    printInfo("Summarizing old conversation turns...");
+    const toSummarize = currentHistory.slice(0, -2); // Summarize all but last 2
+    const summaryPrompt = `Summarize the following conversation history briefly and objectively. Maintain key facts but strip nuance. Output ONLY the summary text.\n\n${JSON.stringify(toSummarize)}`;
+    
+    // We execute this as a separate AI turn without updating history yet
+    try {
+      const response = await ai.models.generateContent({
+        model: state.model,
+        contents: [{ role: "user", parts: [{ text: summaryPrompt }] }],
+      });
+      
+      const summaryText = response.text || "";
+      
+      history.squash(summaryText, toSummarize.length);
+      printSuccess("History summarized and squashed.");
+    } catch (e: any) {
+      printError("Summarization failed: " + e.message);
+    }
+    return { handled: true, shouldExit: false };
+  }
+
   // Not a command - return false
   return { handled: false, shouldExit: false };
 }

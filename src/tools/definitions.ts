@@ -23,7 +23,7 @@ const staticTools = [
   },
   {
     name: "bun_search",
-    description: "Primary web search tool (BUN mode). Call this FIRST for any research query — returns result snippets and URLs. Always follow up with scrape_url on the most relevant URL to read full content.",
+    description: "Primary web search tool (BUN mode). Returns AI-generated summaries of search results using the internal 'bun-search' engine.",
     parameters: {
       type: "OBJECT",
       properties: {
@@ -56,7 +56,7 @@ const staticTools = [
   },
   {
     name: "scrape_url",
-    description: "Extracts full text from a URL. Mandatory step after search to read the actual content.",
+    description: "Extracts an AI-generated summary of the content from a URL using the 'bun-search --scrape' engine. Highly effective for complex or JS-heavy sites.",
     parameters: {
       type: "OBJECT",
       properties: {

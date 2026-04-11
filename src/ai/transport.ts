@@ -131,10 +131,14 @@ async function* callOpenRouter(
   if (!response.ok) {
     const err = await response.text();
     if (response.status === 404 && err.includes("tool use")) {
-      // Retry without tools
       return yield* callOpenRouter(model, contents, [], selectedSearch);
     }
     throw new Error(`OpenRouter Error: ${response.status} ${err}`);
+  }
+
+  // Debug log for token tracking (hidden from normal UI)
+  if (process.env.DEBUG === "true") {
+    console.log(`[DEBUG] OpenRouter prompt turn: ${contents.length} messages, tools: ${tools.length}`);
   }
 
   const reader = response.body?.getReader();

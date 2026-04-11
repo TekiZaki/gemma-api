@@ -104,9 +104,9 @@ export class PromptManager {
     if (selectedSearch === "BUN")
       searchContext = `
 - You are in BUN SEARCH MODE. You MUST use the 'bun_search' tool for ANY query that requires real-world, current, or external information.
-- Workflow: bun_search(query) → then scrape_url(url) on the most relevant result for full content.
+- Workflow: bun_search(query) → then scrape_url(url) on the most relevant result for summarized content.
 - NEVER answer research questions from memory when in BUN mode. Always call bun_search first.
-- If scrape_url fails or returns "JavaScript is disabled", retry that URL with terminal_execute: 'bun-search --scrape "<URL>"'.`;
+- Both search and scrape tools provide AI-optimized summaries automatically.`;
     if (selectedSearch === "FIRECRAWL")
       searchContext =
         "- You MUST use 'firecrawl_search' for any deep web research or markdown data extraction.";
@@ -115,20 +115,15 @@ export class PromptManager {
         "- Google Search Grounding is ENABLED. You have direct access to Google Search.";
 
     return `
-You are a high-performance terminal AI. 
-Current identity: ${selectedSearch ? selectedSearch + " MODE" : "STANDARD"}.
-Ground Truth: The current local time is in the metadata of every message. Trust it.
-
-Protocol:
-- OS: Windows (Native). Shell: PowerShell / CMD. WSL is NOT installed.
-- NEVER use Unix/Bash syntax (e.g. 'export', 'alias', 'date +\"%Y%m%d\"', 'TZ=', '&&' chains).
-- For date/time, use native PowerShell: 'Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"'.
-- Output: Professional, concise, and premium.
+High-performance terminal AI. ID: ${selectedSearch || "STD"}.
+Current Date: ${localDate} ${localTime}.
+OS: Windows Native. Shell: PowerShell. No WSL.
+Rules:
+- Native PS ONLY (Get-Date, etc). NO Bash/Unix.
+- Professional & concise.
 ${searchContext}
-Tool Execution Policy:
-- Commands matching \`bun plugins/<script>\` are PRE-AUTHORIZED and will run automatically without user approval. Use them freely when a plugin is available.
-- Standard builtins (Get-Date, ls, pwd, whoami) are also auto-approved.
-- All other terminal_execute commands require explicit user approval.
+- CMDs 'bun plugins/*' & standard builtins (ls, pwd, etc) AUTO-APPROVED.
+- Others need user confirm.
 `;
   }
 
@@ -140,8 +135,9 @@ export const COMMANDS: CommandDefinition[] = [
   { cmd: "/help or /", desc: "Show this help menu" },
   { cmd: "/reset or !clear", desc: "Clear conversation history" },
   { cmd: "/model or !model [model]", desc: "Change the AI model" },
-  { cmd: "/save or !save", desc: "Save conversation history" },
-  { cmd: "/load or !load", desc: "Load conversation history" },
-  { cmd: "!bun / !firecrawl / !google", desc: "Trigger specific search modes" },
-  { cmd: "exit / quit / \\q", desc: "Exit the application" },
+  { cmd: "/save or !save", desc: "Save history" },
+  { cmd: "/load or !load", desc: "Load history" },
+  { cmd: "/summarize", desc: "Summarize old history" },
+  { cmd: "!bun / !firecrawl / !google", desc: "Search modes" },
+  { cmd: "exit / quit / \\q", desc: "Exit" },
 ];

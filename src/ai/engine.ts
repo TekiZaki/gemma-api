@@ -123,9 +123,9 @@ export async function runTurn(
           return {
             ...turn,
             parts: turn.parts.map(part => {
+              // 1. Prune massive tool outputs (scrape_url, etc)
               if (part.functionResponse && part.functionResponse.response) {
                 const res = part.functionResponse.response;
-                // If the tool returned a massive content string (like scrape_url)
                 if (typeof res.content === 'string' && res.content.length > 300) {
                   return {
                     ...part,
@@ -133,11 +133,18 @@ export async function runTurn(
                       ...part.functionResponse,
                       response: { 
                         ...res, 
-                        content: res.content.slice(0, 300) + "... [Truncated to save tokens]" 
+                        content: res.content.slice(0, 300) + "... [Truncated]" 
                       }
                     }
                   };
                 }
+              }
+              // 2. Prune massive text blocks (user or assistant)
+              if (part.text && part.text.length > 500) {
+                return {
+                  ...part,
+                  text: part.text.slice(0, 500) + "... [Text truncated to save tokens]"
+                };
               }
               return part;
             })

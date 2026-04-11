@@ -36,9 +36,8 @@ export class HistoryManager {
    * Get the current conversation history (capped at last 20 turns to prevent token bloat).
    */
   getHistory(): ConversationTurn[] {
-    const MAX_TURNS = 20;
+    const MAX_TURNS = 15;
     if (this.history.length > MAX_TURNS) {
-      // Keep the oldest system sync/init messages if any, but slice the rest
       this.history = this.history.slice(this.history.length - MAX_TURNS);
     }
     return this.history; 
@@ -58,6 +57,17 @@ export class HistoryManager {
   loadFromJSON(parsed: ConversationTurn[]): void {
     this.history.length = 0;
     this.history.push(...parsed);
+  }
+
+  /**
+   * Replace first N turns with a single summary turn.
+   */
+  squash(summary: string, count: number): void {
+    const summaryTurn: ConversationTurn = {
+      role: "user",
+      parts: [{ text: `[HISTORY_SUMMARY]: ${summary}` }]
+    };
+    this.history.splice(0, count, summaryTurn);
   }
 
   /**
