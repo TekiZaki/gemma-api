@@ -18,9 +18,10 @@ export const CONFIG_PATH = join(PROJ_ROOT, "config.json");
 // ─── Available Models ─────────────────────────────────────────────────────────
 
 export const AVAILABLE_MODELS = [
-  "gemma-4-26b-a4b-it",
-  "gemini-2.5-flash-lite",
   "gemma-4-31b-it",
+  "gemma-4-26b-a4b-it", // default
+  "gemini-2.5-flash-lite",
+  "gemini-3.1-flash-lite-preview",
 
   // OpenRouter model list
   "liquid/lfm-2.5-1.2b-instruct:free",
