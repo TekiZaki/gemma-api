@@ -24,6 +24,7 @@ import type {
 } from "../types";
 import { MemoryManager } from "./memory";
 import { SessionClock } from "./session";
+import { isOpenRouterModel, PromptManager } from "../config";
 
 
 // ─── Run Turn ─────────────────────────────────────────────────────────────────
@@ -99,9 +100,6 @@ export async function runTurn(
       contents.push({ role: "user", parts: [{ text: prompt }] });
     }
 
-    spinnerPromise = silent
-      ? Promise.resolve()
-      : showSpinner(() => !spinnerRunning);
 
     let activeTools: any[] = [];
     if (!noTools) {
@@ -133,7 +131,7 @@ export async function runTurn(
                       ...part.functionResponse,
                       response: { 
                         ...res, 
-                        content: res.content.slice(0, 300) + "... [Truncated]" 
+                        content: res.content.slice(0, 200) + "... [Truncated]" 
                       }
                     }
                   };
@@ -143,7 +141,7 @@ export async function runTurn(
               if (part.text && part.text.length > 500) {
                 return {
                   ...part,
-                  text: part.text.slice(0, 500) + "... [Text truncated to save tokens]"
+                  text: part.text.slice(0, 300) + "... [Text truncated to save tokens]"
                 };
               }
               return part;
@@ -153,6 +151,29 @@ export async function runTurn(
         return turn;
       });
       
+      let tokenStatus = "";
+      if (!isOpenRouterModel(state.model)) {
+        try {
+          const countResponse = await ai.models.countTokens({
+            model: state.model,
+            contents: optimizedContents,
+            config: {
+              tools: activeTools,
+              systemInstruction: PromptManager.getSystemPrompt(selectedSearch),
+            },
+          });
+          if (countResponse && countResponse.totalTokens) {
+            tokenStatus = `(${countResponse.totalTokens} tokens)`;
+          }
+        } catch (e) {
+          // Ignore failures
+        }
+      }
+
+      spinnerPromise = silent
+        ? Promise.resolve()
+        : showSpinner(() => !spinnerRunning, tokenStatus);
+
       const stream = getStream(state.model, optimizedContents, {
         ai,
         activeTools,
@@ -219,7 +240,9 @@ export async function runTurn(
           {
             promptTokenCount: usageAcc.p,
             candidatesTokenCount: usageAcc.c,
-            totalTokenCount: usageAcc.p + usageAcc.c,
+            thoughtsTokenCount: usageAcc.t,
+            cachedContentTokenCount: usageAcc.cc,
+            totalTokenCount: usageAcc.p + usageAcc.c + (usageAcc.t || 0) + (usageAcc.cc || 0),
           },
           stats.totalTokens,
         );

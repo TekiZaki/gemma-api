@@ -18,15 +18,14 @@ import { MemoryManager } from "../ai/memory";
 export const terminalExecute = async ({ command }: { command: string }): Promise<ToolResult> => {
   if (!command) return { error: "No command provided." };
   
-  let finalCommand = command;
-  if (process.platform === "win32") {
-    // Escape double quotes in command for powershell wrapper
-    const escaped = command.replace(/"/g, '`"');
-    finalCommand = `powershell -NoProfile -NonInteractive -Command "${escaped}"`;
-  }
-
   try {
-    const result = await $`${{ raw: finalCommand }}`.text();
+    let result: string;
+    if (process.platform === "win32") {
+      // Use positional parameter to avoid quoting hell with -Command
+      result = await $`powershell -NoProfile -NonInteractive -Command ${command}`.text();
+    } else {
+      result = await $`${{ raw: command }}`.text();
+    }
     return { output: result.trim() };
   } catch (err: any) {
     return { error: err.message };
@@ -39,7 +38,7 @@ export const terminalExecute = async ({ command }: { command: string }): Promise
 export const bunSearch = async ({ query }: { query: string }): Promise<ToolResult> => {
   if (!query) return { error: "No query provided." };
   try {
-    const rawResult = await $`bun-search ${query} --summarize`.quiet();
+    const rawResult = await $`bun-search ${query}`.quiet();
     if (rawResult.exitCode !== 0) {
       return { error: `bun-search failed: ${rawResult.stderr.toString() || 'Unknown error'}` };
     }
@@ -98,7 +97,7 @@ export const firecrawlSearch = async ({ query }: { query: string }): Promise<Too
 export const scrapeUrl = async ({ url }: { url: string }): Promise<ToolResult> => {
   if (!url) return { error: "No URL provided." };
   try {
-    const rawResult = await $`bun-search --scrape ${url} --summarize`.quiet();
+    const rawResult = await $`bun-search --scrape ${url}`.quiet();
     if (rawResult.exitCode !== 0) {
       return { error: `scrape failed: ${rawResult.stderr.toString() || 'Unknown error'}` };
     }

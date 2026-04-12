@@ -87,14 +87,21 @@ function mapToOpenRouterMessages(contents: ConversationTurn[], systemPrompt: str
     if (contentParts.length > 0) {
       message.content = contentParts.map(cp => cp.text).join("");
     }
+    
     if (toolCalls.length > 0) {
+      // Force assistant role for tool calls (OpenRouter/OpenAI requirement)
+      message.role = "assistant"; 
       message.tool_calls = toolCalls;
-      // Some providers require content to be null if tool_calls is present
-      if (message.content === undefined) {
-          message.content = null;
-      }
+      // Content MUST be null (not absent) when tool_calls is present for many providers
+      if (!message.content) message.content = null;
+    } else if (role === "assistant" && !message.content) {
+      // Empty assistant messages are often rejected
+      message.content = "(thinking...)";
     }
-    messages.push(message);
+
+    if (message.content !== undefined || message.tool_calls) {
+      messages.push(message);
+    }
   }
   return messages;
 }
@@ -251,6 +258,8 @@ async function* callOpenRouter(
                     promptTokenCount: usage.prompt_tokens,
                     candidatesTokenCount: usage.completion_tokens,
                     totalTokenCount: usage.total_tokens,
+                    thoughtsTokenCount: usage.extra?.thoughts_tokens,
+                    cachedContentTokenCount: usage.extra?.cached_tokens,
                   }
                 : undefined,
             };

@@ -41,11 +41,15 @@ export interface UsageMetadata {
   promptTokenCount: number;
   candidatesTokenCount: number;
   totalTokenCount: number;
+  thoughtsTokenCount?: number;
+  cachedContentTokenCount?: number;
 }
 
 export interface UsageAccumulator {
   p: number; // prompt tokens
   c: number; // candidate tokens
+  t?: number; // thinking tokens
+  cc?: number; // cached content tokens
 }
 
 export interface TurnOptions {
@@ -65,10 +69,14 @@ export interface CommandDefinition {
 export class SessionStats {
   private promptTokens = 0;
   private candidateTokens = 0;
+  private thoughtsTokens = 0;
+  private cachedTokens = 0;
 
   accumulate(usage: UsageMetadata) {
     this.promptTokens += usage.promptTokenCount || 0;
     this.candidateTokens += usage.candidatesTokenCount || 0;
+    this.thoughtsTokens += usage.thoughtsTokenCount || 0;
+    this.cachedTokens += usage.cachedContentTokenCount || 0;
   }
 
   get totalPromptTokens() {
@@ -79,13 +87,28 @@ export class SessionStats {
     return this.candidateTokens;
   }
 
+  get totalThoughtsTokens() {
+    return this.thoughtsTokens;
+  }
+
+  get totalCachedTokens() {
+    return this.cachedTokens;
+  }
+
   get totalTokens() {
-    return this.promptTokens + this.candidateTokens;
+    return (
+      this.promptTokens +
+      this.candidateTokens +
+      this.thoughtsTokens +
+      this.cachedTokens
+    );
   }
 
   reset() {
     this.promptTokens = 0;
     this.candidateTokens = 0;
+    this.thoughtsTokens = 0;
+    this.cachedTokens = 0;
   }
 }
 

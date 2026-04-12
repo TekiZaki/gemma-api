@@ -16,6 +16,7 @@ import {
   printAction,
   printObservation,
   printResponse,
+  printInfo,
 } from "../ui/components";
 
 import { PromptManager, supportsThinking } from "../config";
@@ -41,10 +42,20 @@ export async function handleToolCalls(
   stats?: SessionStats,
   piped = false,
   noTools = false,
+  depth = 0,
 ): Promise<any> {
+  const MAX_DEPTH = 3;
+  if (depth >= MAX_DEPTH) {
+    printInfo(`Search/Tool depth limit reached. Synthesizing available data.`);
+    return response;
+  }
+
   if (response.usageMetadata) {
     usageAcc.p += response.usageMetadata.promptTokenCount || 0;
     usageAcc.c += response.usageMetadata.candidatesTokenCount || 0;
+    usageAcc.t = (usageAcc.t || 0) + (response.usageMetadata.thoughtsTokenCount || 0);
+    usageAcc.cc = (usageAcc.cc || 0) + (response.usageMetadata.cachedContentTokenCount || 0);
+
     if (stats) stats.accumulate(response.usageMetadata);
   }
 
@@ -215,6 +226,7 @@ export async function handleToolCalls(
       stats,
       piped,
       noTools,
+      depth + 1,
     );
   } catch (error: any) {
     spinnerRunning = false;

@@ -14,7 +14,7 @@ import { loadEnv, loadConfig, AVAILABLE_MODELS, isOpenRouterModel, PromptManager
 import { printHeader, printError, printInfo } from "./ui/components";
 import { runTurn } from "./ai/engine";
 import { HistoryManager } from "./ai/history";
-import { resolveSearchFeature, readStdin, handleCommand } from "./commands";
+import { resolveSearchFeature, readStdin, handleCommand, stripSearchFlags } from "./commands";
 import { AppState, SessionStats as SessionStatsClass } from "./types";
 import type { SessionStats } from "./types";
 import { DIM, AMBER, RESET } from "./ui/theme";
@@ -88,7 +88,8 @@ async function main() {
       .join(" ");
 
     const selectedSearch = await resolveSearchFeature(cleanPrompt, rl);
-    await runTurn(cleanPrompt, ai, history.getHistory(), rl, stats, {
+    const cleanPromptWithNoFlags = stripSearchFlags(cleanPrompt);
+    await runTurn(cleanPromptWithNoFlags, ai, history.getHistory(), rl, stats, {
       selectedSearch,
       piped: !!stdinContent,
       noTools,
@@ -116,9 +117,9 @@ async function main() {
         if (shouldExit) break;
         if (handled) continue;
 
-        // Not a command - treat as AI prompt
         const selectedSearch = await resolveSearchFeature(cleanAnswer, rl);
-        await runTurn(cleanAnswer, ai, history.getHistory(), rl, stats, {
+        const cleanPromptWithNoFlags = stripSearchFlags(cleanAnswer);
+        await runTurn(cleanPromptWithNoFlags, ai, history.getHistory(), rl, stats, {
           selectedSearch,
         });
       }

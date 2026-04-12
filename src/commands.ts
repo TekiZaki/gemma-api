@@ -30,6 +30,17 @@ export async function resolveSearchFeature(
   return undefined;
 }
 
+export function stripSearchFlags(prompt: string): string {
+  return prompt
+    .replace(/!bun/gi, "")
+    .replace(/!firecrawl/gi, "")
+    .replace(/!google/gi, "")
+    .replace(/using bun-search/gi, "")
+    .replace(/using firecrawl/gi, "")
+    .replace(/using google search/gi, "")
+    .trim();
+}
+
 // ─── Stdin Reader ─────────────────────────────────────────────────────────────
 
 export async function readStdin(): Promise<string | null> {
@@ -96,13 +107,17 @@ export async function handleCommand(
       if (selected && selected !== state.model) {
         state.model = selected;
         saveConfig({ model: state.model });
+        history.reset(); // RESET HISTORY on model switch
         printHeader(state.model);
         printSuccess(`Switched to ${state.model} (saved)`);
+        printInfo("Context cleared to prevent cross-model behavior.");
       }
     } else if (AVAILABLE_MODELS.includes(modelArg)) {
       state.model = modelArg;
       saveConfig({ model: state.model });
+      history.reset();
       printSuccess(`Switched to ${state.model} (saved)`);
+      printInfo("Context cleared to prevent cross-model behavior.");
     } else {
       printError(`Invalid model. Available: ${AVAILABLE_MODELS.join(", ")}`);
     }

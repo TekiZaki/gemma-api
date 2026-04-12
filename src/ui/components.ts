@@ -29,10 +29,20 @@ export function printUsage(
     promptTokenCount = 0,
     candidatesTokenCount = 0,
     totalTokenCount = 0,
+    thoughtsTokenCount = 0,
+    cachedContentTokenCount = 0,
   } = usage;
 
+  let parts = [
+    `${promptTokenCount} prompt`,
+    `${candidatesTokenCount} completion`
+  ];
+
+  if (thoughtsTokenCount > 0) parts.push(`${thoughtsTokenCount} thinking`);
+  if (cachedContentTokenCount > 0) parts.push(`${cachedContentTokenCount} cached`);
+
   console.log(
-    `\n${DIM}[${modelName}] Tokens: ${promptTokenCount} prompt + ${candidatesTokenCount} completion = ${totalTokenCount} total${RESET}`,
+    `\n${DIM}[${modelName}] Tokens: ${parts.join(" + ")} = ${totalTokenCount} total${RESET}`,
   );
   console.log(`${DIM}Session Total: ${sessionTotal}${RESET}`);
 }
@@ -59,13 +69,18 @@ export function printWarn(message: string): void {
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 
-export async function showSpinner(stopCondition: () => boolean): Promise<void> {
+export async function showSpinner(stopCondition: () => boolean, status?: string): Promise<void> {
   const chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   let i = 0;
+  const startTime = Date.now();
 
   while (!stopCondition()) {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const timeStr = `${DIM}(${elapsed}s)${RESET}`;
+    const statusStr = status ? ` ${DIM}${status}${RESET}` : "";
+
     process.stdout.write(
-      `\r${AMBER}${chars[i % chars.length]}${RESET} Thinking... `,
+      `\r${AMBER}${chars[i % chars.length]}${RESET} Thinking... ${timeStr}${statusStr} `,
     );
     i++;
     await new Promise((r) => setTimeout(r, 100));

@@ -18,12 +18,13 @@ export const CONFIG_PATH = join(PROJ_ROOT, "config.json");
 // ─── Available Models ─────────────────────────────────────────────────────────
 
 export const AVAILABLE_MODELS = [
+  // Gemini models
   "gemma-4-31b-it",
   "gemma-4-26b-a4b-it", // default
   "gemini-2.5-flash-lite",
   "gemini-3.1-flash-lite-preview",
 
-  // OpenRouter model list
+  // OpenRouter models
   "liquid/lfm-2.5-1.2b-instruct:free",
   "nvidia/nemotron-3-nano-30b-a3b:free",
   "z-ai/glm-4.5-air:free",
@@ -104,10 +105,11 @@ export class PromptManager {
     let searchContext = "";
     if (selectedSearch === "BUN")
       searchContext = `
-- You are in BUN SEARCH MODE. You MUST use the 'bun_search' tool for ANY query that requires real-world, current, or external information.
-- Workflow: bun_search(query) → then scrape_url(url) on the most relevant result for summarized content.
-- NEVER answer research questions from memory when in BUN mode. Always call bun_search first.
-- Both search and scrape tools provide AI-optimized summaries automatically.`;
+- You are in BUN SEARCH MODE. You MUST use 'bun_search' for any current or external facts.
+- **EFFICIENCY RULE**: Use 'bun_search' ONCE. It returns an 'AI OVERVIEW' (SGE result) and multiple snippets. These are often sufficient alone.
+- Do NOT loop. If you have the answer in the first search, stop and synthesize.
+- Only use 'scrape_url' if the search snippets are clearly missing the specific detail you need.
+- DO NOT perform more than 2 sequential searches for a single request. If still unsure, state what you found and what is missing.`;
     if (selectedSearch === "FIRECRAWL")
       searchContext =
         "- You MUST use 'firecrawl_search' for any deep web research or markdown data extraction.";
@@ -122,6 +124,7 @@ OS: Windows Native. Shell: PowerShell. No WSL.
 Rules:
 - Native PS ONLY (Get-Date, etc). NO Bash/Unix.
 - Professional & concise.
+- NEVER call 'terminal_execute' for the current date/time; it is provided above.
 ${searchContext}
 - CMDs 'bun plugins/*' & standard builtins (ls, pwd, etc) AUTO-APPROVED.
 - Others need user confirm.
