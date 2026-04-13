@@ -89,15 +89,37 @@ export async function runTurn(
     sessionClock.update(now);
 
     // ─── Long-Term Memory Recall ──────────────────────────────────────────────
+    const timeStr = now.toLocaleDateString("en-ID", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: "Asia/Jakarta",
+    });
+
+    const contextPrefix = `[Context: Time=${timeStr}, OS=Windows]\n\n`;
+
     const memories = MemoryManager.getInstance().recall(prompt);
     if (memories.length > 0) {
       const memoryContext = memories
-        .map(m => `[RECALLED_MEMORY] (${m.timestamp}): ${m.fact}`)
+        .map((m, i) => `${i + 1}. ${m.fact}`)
         .join("\n");
-      contents.push({ role: "user", parts: [{ text: `System Note: Relevant memories found:\n${memoryContext}\n\nProceed with my request: ${prompt}` }] });
+      contents.push({
+        role: "user",
+        parts: [
+          {
+            text: `${contextPrefix}System Note: Relevant memories found:\n${memoryContext}\n\nProceed with my request: ${prompt}`,
+          },
+        ],
+      });
     } else {
-      // Let the System Prompt handle the time. Just push the clean prompt.
-      contents.push({ role: "user", parts: [{ text: prompt }] });
+      contents.push({
+        role: "user",
+        parts: [{ text: `${contextPrefix}${prompt}` }],
+      });
     }
 
 
