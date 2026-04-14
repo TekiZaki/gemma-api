@@ -211,7 +211,7 @@ export function printObservation(name: string, result: any): void {
     lines = [
       `${BOLD}URL:${RESET} ${DIM}${result.url}${RESET}`,
       "",
-      ...wrapText(content.slice(0, 500), process.stdout.columns - 6).map(l => `${DIM}${l}${RESET}`)
+      ...wrapText(content.slice(0, 500), process.stdout.columns - 6).map((l: string) => `${DIM}${l}${RESET}`)
     ];
     footer = `Scraped ${content.length} characters`;
   } else if (name === "read_file") {
@@ -220,7 +220,7 @@ export function printObservation(name: string, result: any): void {
       `${BOLD}File:${RESET} ${DIM}${result.path}${RESET}`,
       `${BOLD}Size:${RESET} ${DIM}${(result.size / 1024).toFixed(1)} KB${RESET}`,
       "",
-      ...contentSnippet.split("\n").slice(0, 15).map(l => `${DIM}${l.slice(0, 120)}${RESET}`),
+      ...contentSnippet.split("\n").slice(0, 15).map((l: string) => `${DIM}${l.slice(0, 120)}${RESET}`),
       ...(contentSnippet.split("\n").length > 15 || result.content?.length > 500 ? [`${DIM}... (content truncated)${RESET}`] : [])
     ];
     footer = `Read from local disk`;
