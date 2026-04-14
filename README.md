@@ -5,8 +5,10 @@ gemma-api is a command-line AI assistant powered by Google's Generative AI model
 ## Features
 
 * **Multiple Models**: Supports models like `gemma-4-31b-it`, `gemini-3.1-flash-lite-preview`, and others, featuring an interactive model selector.
-* **Tool Integration**: Capable of executing local terminal commands, reading local files, and scraping web URLs for comprehensive context.
+* **Tool Integration**: Capable of executing local terminal commands, advanced file management, and scraping web URLs for comprehensive context.
+* **File Management Tools**: Specialized tools to `read_file` (up to 2MB), `list_files` (recursive), and `write_file` (supports overwrite, append, and smart patching).
 * **Web Search**: Integrates with Google Search Grounding, Firecrawl, and a custom `bun-search` tool for real-time web data extraction.
+* **Safety & Security**: Sensitive tools (`terminal_execute`, `write_file`, `create_tool`) require explicit user authorization before execution.
 * **Persistent Modes**: Selected search modes (`!google`, `!bun`, `!firecrawl`) persist across follow-up questions in a session.
 * **Session Management**: Clear your conversation history to reset context.
 * **Token Optimization**: Automatically prunes and truncates old tool outputs and long text blocks to maximize context window efficiency.
