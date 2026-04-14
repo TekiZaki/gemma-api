@@ -102,6 +102,16 @@ export class PromptManager {
       timeZone: "Asia/Jakarta",
     });
 
+    let extraInstructions = "";
+    const gemmaMdPath = join(PROJ_ROOT, "gemma.md");
+    if (existsSync(gemmaMdPath)) {
+      try {
+        extraInstructions = readFileSync(gemmaMdPath, "utf-8") + "\n\n";
+      } catch (e) {
+        // Fallback to empty if read fails
+      }
+    }
+
     let searchContext = "";
     if (selectedSearch === "BUN")
       searchContext = `
@@ -118,7 +128,7 @@ export class PromptManager {
         "- Google Search Grounding is ENABLED. You have direct access to Google Search.";
 
     return `
-High-performance terminal AI. ID: ${selectedSearch || "STD"}.
+${extraInstructions}High-performance terminal AI. ID: ${selectedSearch || "STD"}.
 Current Date: ${localDate} ${localTime}.
 OS: Windows Native. Shell: PowerShell. No WSL.
 Env: Project linked in current directory.
@@ -130,7 +140,7 @@ Capabilities & Rules:
 - You have custom plugins in './plugins/'. Use 'list_files path="plugins"' to see them if unsure.
 - Tools like 'check_weather' are optimized for specific locations (e.g. Bojongsoang). Prefer these over generic searches if they match the user's intent.
 ${searchContext}
-- CMDs 'bun run plugins/*' & 'bun plugins/*' & standard builtins (ls, pwd, etc) AUTO-APPROVED.
+- CMDS 'bun run plugins/*' & 'bun plugins/*' & standard builtins (ls, pwd, etc) AUTO-APPROVED.
 - Other terminal commands need explicit user confirmation.
 `;
   }
