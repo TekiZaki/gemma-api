@@ -117,6 +117,7 @@ export class SessionStats {
 export class AppState {
   private static instance: AppState | null = null;
   private currentModelName: string;
+  private currentSearchMode: string | undefined = undefined;
 
   private constructor(initialModel: string) {
     this.currentModelName = initialModel;
@@ -142,6 +143,14 @@ export class AppState {
 
   set model(value: string) {
     this.currentModelName = value;
+  }
+
+  get searchMode(): string | undefined {
+    return this.currentSearchMode;
+  }
+
+  set searchMode(value: string | undefined) {
+    this.currentSearchMode = value;
   }
 
   static reset() {

@@ -24,10 +24,23 @@ export async function resolveSearchFeature(
   prompt: string,
   rl: readLine.Interface,
 ): Promise<string | undefined> {
-  if (/using bun-search|!bun/i.test(prompt)) return "BUN";
-  if (/using firecrawl|!firecrawl/i.test(prompt)) return "FIRECRAWL";
-  if (/using google search|!google/i.test(prompt)) return "GOOGLE";
-  return undefined;
+  const state = AppState.getInstance();
+  
+  if (/using bun-search|!bun/i.test(prompt)) {
+    state.searchMode = "BUN";
+    return "BUN";
+  }
+  if (/using firecrawl|!firecrawl/i.test(prompt)) {
+    state.searchMode = "FIRECRAWL";
+    return "FIRECRAWL";
+  }
+  if (/using google search|!google/i.test(prompt)) {
+    state.searchMode = "GOOGLE";
+    return "GOOGLE";
+  }
+  
+  // No prefix found - use existing state if available
+  return state.searchMode;
 }
 
 export function stripSearchFlags(prompt: string): string {
@@ -86,6 +99,7 @@ export async function handleCommand(
   // Reset/Clear command
   if (["!clear", "/reset"].includes(cleanAnswer.toLowerCase())) {
     history.reset();
+    state.searchMode = undefined;
     await runTurn("SYSTEM_INIT_ACK", ai, history.getHistory(), rl, stats, {
       silent: true,
     });

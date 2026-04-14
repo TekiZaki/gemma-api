@@ -126,27 +126,35 @@ export async function runTurn(
           return {
             ...turn,
             parts: turn.parts.map(part => {
-              // 1. Prune massive tool outputs (scrape_url, etc)
+              // 1. Prune massive tool outputs (scrape_url, bun_search, index_file, etc)
               if (part.functionResponse && part.functionResponse.response) {
                 const res = part.functionResponse.response;
+                // Handle 'content' field
                 if (typeof res.content === 'string' && res.content.length > 300) {
-                  return {
-                    ...part,
-                    functionResponse: {
-                      ...part.functionResponse,
-                      response: { 
-                        ...res, 
-                        content: res.content.slice(0, 200) + "... [Truncated]" 
-                      }
-                    }
-                  };
+                  res.content = res.content.slice(0, 200) + "... [Truncated]";
                 }
-              }
-              // 2. Prune massive text blocks (user or assistant)
-              if (part.text && part.text.length > 500) {
+                // Handle 'results' field (bun_search)
+                if (typeof res.results === 'string' && res.results.length > 300) {
+                  res.results = res.results.slice(0, 200) + "... [Truncated]";
+                }
+                // Handle 'output' field (terminal_execute)
+                if (typeof res.output === 'string' && res.output.length > 300) {
+                  res.output = res.output.slice(0, 200) + "... [Truncated]";
+                }
+
                 return {
                   ...part,
-                  text: part.text.slice(0, 300) + "... [Text truncated to save tokens]"
+                  functionResponse: {
+                    ...part.functionResponse,
+                    response: { ...res }
+                  }
+                };
+              }
+              // 2. Prune massive text blocks (user or assistant)
+              if (part.text && part.text.length > 800) {
+                return {
+                  ...part,
+                  text: part.text.slice(0, 500) + "... [Text truncated to save tokens]"
                 };
               }
               return part;
