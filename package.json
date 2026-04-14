@@ -1,0 +1,29 @@
+{
+  "name": "gemma-api",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "bin": {
+    "gemma-api": "./src/index.ts"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "bun src/index.ts"
+  },
+  "devDependencies": {
+    "@types/marked-terminal": "^6.1.1",
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.2.0",
+    "@google/genai": "^1.48.0",
+    "boxen": "^8.0.1",
+    "consola": "^3.4.2",
+    "marked": "^17.0.6",
+    "marked-terminal": "^7.3.0",
+    "node-html-parser": "^7.1.0"
+  }
+}
