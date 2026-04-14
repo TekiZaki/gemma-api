@@ -12,7 +12,7 @@ import { createToolDefinition, dynamicDefinitions } from "./plugin-manager";
 const staticTools = [
   {
     name: "terminal_execute",
-    description: "Executes terminal commands on Windows (PowerShell/CMD). If asking for time, use 'Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"'. NEVER use Unix/Bash syntax.",
+    description: "Executes terminal commands on Windows (PowerShell/CMD). If asking for time, use 'Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"'. NEVER use Unix/Bash syntax. For running TypeScript (.ts) files, ALWAYS use 'bun run <filename>'.",
     parameters: {
       type: "OBJECT",
       properties: {

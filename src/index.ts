@@ -98,6 +98,7 @@ async function main() {
   } else {
     // REPL mode
     printInfo("Entering REPL mode. Type 'exit' or 'quit' to end.");
+    console.log(`${DIM}Session Total: ${stats.totalTokens}${RESET}`);
     try {
       while (true) {
         const answer = await readInputWithSuggestions(`${AMBER}?> ${RESET}`);

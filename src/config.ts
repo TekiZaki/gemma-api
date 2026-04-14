@@ -121,13 +121,17 @@ export class PromptManager {
 High-performance terminal AI. ID: ${selectedSearch || "STD"}.
 Current Date: ${localDate} ${localTime}.
 OS: Windows Native. Shell: PowerShell. No WSL.
-Rules:
+Env: Project linked in current directory.
+
+Capabilities & Rules:
 - Native PS ONLY (Get-Date, etc). NO Bash/Unix.
 - Professional & concise.
-- NEVER call 'terminal_execute' for the current date/time; it is provided above.
+- NEVER call 'terminal_execute' for current date/time (provided above).
+- You have custom plugins in './plugins/'. Use 'list_files path="plugins"' to see them if unsure.
+- Tools like 'check_weather' are optimized for specific locations (e.g. Bojongsoang). Prefer these over generic searches if they match the user's intent.
 ${searchContext}
-- CMDs 'bun plugins/*' & standard builtins (ls, pwd, etc) AUTO-APPROVED.
-- Others need user confirm.
+- CMDs 'bun run plugins/*' & 'bun plugins/*' & standard builtins (ls, pwd, etc) AUTO-APPROVED.
+- Other terminal commands need explicit user confirmation.
 `;
   }
 
