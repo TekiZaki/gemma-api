@@ -4,10 +4,12 @@ gemma-api is a command-line AI assistant powered by Google's Generative AI model
 
 ## Features
 
-* **Multiple Models**: Supports models like `gemma-4-31b-it`, `gemini-2.5-flash-lite`, and others, featuring an interactive model selector.
+* **Multiple Models**: Supports models like `gemma-4-31b-it`, `gemini-3.1-flash-lite-preview`, and others, featuring an interactive model selector.
 * **Tool Integration**: Capable of executing local terminal commands, reading local files, and scraping web URLs for comprehensive context.
 * **Web Search**: Integrates with Google Search Grounding, Firecrawl, and a custom `bun-search` tool for real-time web data extraction.
-* **Session Management**: Save, load, and clear your conversation history to maintain context across sessions.
+* **Persistent Modes**: Selected search modes (`!google`, `!bun`, `!firecrawl`) persist across follow-up questions in a session.
+* **Session Management**: Clear your conversation history to reset context.
+* **Token Optimization**: Automatically prunes and truncates old tool outputs and long text blocks to maximize context window efficiency.
 * **Thinking Mode**: Supports advanced reasoning capabilities for supported Gemini and Gemma models.
 
 ## Prerequisites
@@ -63,13 +65,18 @@ cat src/index.ts | gemma-api "Refactor this code to improve performance"
 When running in REPL mode, you can use the following commands to control the session:
 
 * `/help` or `/`: Show the help menu.
-* `/reset` or `!clear`: Clear the current conversation history.
+* `/reset` or `!clear`: Clear the current conversation history and reset search modes.
 * `/model` or `!model [model_name]`: Open the interactive model selector or directly change the AI model.
-* `/save` or `!save`: Save the conversation history to `history.json`.
-* `/load` or `!load`: Load previous conversation history from `history.json`.
-* `!bun`, `!firecrawl`, `!google`: Force the assistant to use a specific search engine for the prompt.
+* `!bun`, `!firecrawl`, `!google`: Force the assistant to use a specific search engine. The choice **persists** for follow-up questions.
 * `exit`, `quit`, `\q`: Exit the application.
 
 ## Search Engines
 
-By default, the AI is instructed to utilize `bun_search` for factual web queries, which depends on [bun-search](https://github.com/TekiZaki/bun-search) being accessible in your environment. You can also explicitly trigger Google Search Grounding by prepending `!google` to your prompt, or Firecrawl for markdown-based deep crawling by prepending `!firecrawl`.
+By default, the AI is instructed to utilize `bun_search` for factual web queries, which depends on [bun-search](https://github.com/TekiZaki/bun-search) being accessible in your environment. 
+
+You can explicitly trigger specialized search modes by prepending a flag to your prompt:
+- `!google`: Enables official Google Search Grounding.
+- `!firecrawl`: Uses Firecrawl for deep web crawling and markdown extraction.
+- `!bun`: Forces standard `bun-search` behavior.
+
+**Stickiness**: Once a mode is selected, follow-up questions in the same session will continue using that mode until you explicitly switch or reset the session with `/reset`.

@@ -138,31 +138,6 @@ export async function handleCommand(
     return { handled: true, shouldExit: false };
   }
 
-  // Save command
-  if (["!save", "/save"].includes(cleanAnswer.toLowerCase())) {
-    const historyPath = join(PROJ_ROOT, "history.json");
-    writeFileSync(
-      historyPath,
-      JSON.stringify(history.getHistory(), null, 2),
-    );
-    printSuccess(`Conversation history saved to ${historyPath}`);
-    return { handled: true, shouldExit: false };
-  }
-
-  // Load command
-  if (["!load", "/load"].includes(cleanAnswer.toLowerCase())) {
-    const historyPath = join(PROJ_ROOT, "history.json");
-    if (existsSync(historyPath)) {
-      const data = readFileSync(historyPath, "utf-8");
-      const parsed = JSON.parse(data);
-      history.loadFromJSON(parsed);
-      printSuccess(`Conversation history loaded from ${historyPath}`);
-    } else {
-      printError(`No history file found at ${historyPath}`);
-    }
-    return { handled: true, shouldExit: false };
-  }
-
   // Summarize command
   if (cleanAnswer.toLowerCase() === "/summarize") {
     const currentHistory = history.getHistory();

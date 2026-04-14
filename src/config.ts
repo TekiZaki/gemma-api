@@ -139,8 +139,6 @@ export const COMMANDS: CommandDefinition[] = [
   { cmd: "/help or /", desc: "Show this help menu" },
   { cmd: "/reset or !clear", desc: "Clear conversation history" },
   { cmd: "/model or !model [model]", desc: "Change the AI model" },
-  { cmd: "/save or !save", desc: "Save history" },
-  { cmd: "/load or !load", desc: "Load history" },
   { cmd: "/summarize", desc: "Summarize old history" },
   { cmd: "!bun / !firecrawl / !google", desc: "Search modes" },
   { cmd: "exit / quit / \\q", desc: "Exit" },
