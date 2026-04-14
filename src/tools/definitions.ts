@@ -45,13 +45,40 @@ const staticTools = [
   },
   {
     name: "read_file",
-    description: "Reads a local file.",
+    description: "Reads a local file using Bun native API. Max 2 MB. Returns file content, size, and path.",
     parameters: {
       type: "OBJECT",
       properties: {
-        path: { type: "STRING", description: "Path to file." },
+        path: { type: "STRING", description: "Absolute or relative path to the file." },
+        encoding: { type: "STRING", description: "Encoding to use (default: utf-8)." },
       },
       required: ["path"],
+    },
+  },
+  {
+    name: "list_files",
+    description: "Lists files and directories in a given path using Bun/fs. Returns an array of relative paths. Directories are suffixed with '/'.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        path: { type: "STRING", description: "Absolute or relative path to the directory." },
+        recursive: { type: "STRING", description: "Set to 'true' to list recursively (max depth 5)." },
+        show_hidden: { type: "STRING", description: "Set to 'true' to include dot-files." },
+      },
+      required: ["path"],
+    },
+  },
+  {
+    name: "write_file",
+    description: "Writes or edits a local file using Bun.write(). Supports three modes: 'overwrite' (default, full replace), 'append' (add to end), 'patch' (find+replace via JSON { find, replace }).",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        path: { type: "STRING", description: "Absolute or relative path to the file." },
+        content: { type: "STRING", description: "Content to write. For patch mode, pass JSON: { \"find\": \"...\", \"replace\": \"...\" }" },
+        mode: { type: "STRING", description: "Write mode: 'overwrite' | 'append' | 'patch'. Default: 'overwrite'." },
+      },
+      required: ["path", "content"],
     },
   },
   {

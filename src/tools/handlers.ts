@@ -6,7 +6,8 @@
 // - Depends on: Bun.$, node-html-parser, ui/theme, ui/components, plugin-manager.
 // ---
 import { $ } from "bun";
-import { readFileSync, existsSync } from "fs";
+import { readdirSync, statSync, mkdirSync } from "fs";
+import { join as pathJoin, dirname } from "path";
 import { parse } from "node-html-parser";
 import { AMBER, DIM, RESET } from "../ui/theme";
 import { printCard } from "../ui/components";
@@ -119,11 +120,98 @@ export const scrapeUrl = async ({ url }: { url: string }): Promise<ToolResult> =
   }
 };
 
-export const readFile = async ({ path }: { path: string }): Promise<ToolResult> => {
+export const readFile = async ({ path, encoding = "utf-8" }: { path: string; encoding?: string }): Promise<ToolResult> => {
   try {
-    if (!existsSync(path)) return { error: `File not found: ${path}` };
-    const content = readFileSync(path, "utf-8");
-    return { content };
+    const file = Bun.file(path);
+    const exists = await file.exists();
+    if (!exists) return { error: `File not found: ${path}` };
+
+    const size = file.size;
+    if (size > 2 * 1024 * 1024) {
+      return { error: `File too large (${(size / 1024).toFixed(1)} KB). Max 2 MB.` };
+    }
+
+    const content = await file.text();
+    return { content, size, path };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+};
+
+export const listFiles = async ({
+  path,
+  recursive = false,
+  show_hidden = false,
+}: {
+  path: string;
+  recursive?: boolean;
+  show_hidden?: boolean;
+}): Promise<ToolResult> => {
+  try {
+    const stat = statSync(path);
+    if (!stat.isDirectory()) return { error: `Not a directory: ${path}` };
+
+    const walk = (dir: string, depth: number): string[] => {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      const results: string[] = [];
+      for (const entry of entries) {
+        if (!show_hidden && entry.name.startsWith(".")) continue;
+        const fullPath = pathJoin(dir, entry.name);
+        const rel = fullPath.replace(path, "").replace(/^[\\/]/, "");
+        const label = entry.isDirectory() ? `${rel}/` : rel;
+        results.push(label);
+        if (recursive && entry.isDirectory() && depth < 5) {
+          results.push(...walk(fullPath, depth + 1));
+        }
+      }
+      return results;
+    };
+
+    const files = walk(path, 0);
+    return { path, entries: files, count: files.length };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+};
+
+export const writeFile = async ({
+  path,
+  content,
+  mode = "overwrite",
+}: {
+  path: string;
+  content: string;
+  mode?: "overwrite" | "append" | "patch";
+}): Promise<ToolResult> => {
+  try {
+    // Ensure parent directory exists
+    mkdirSync(dirname(path), { recursive: true });
+
+    if (mode === "append") {
+      const existing = await Bun.file(path).exists()
+        ? await Bun.file(path).text()
+        : "";
+      await Bun.write(path, existing + content);
+    } else if (mode === "patch") {
+      // Patch: expects content as JSON { find: string, replace: string }
+      let patchArgs: { find: string; replace: string };
+      try {
+        patchArgs = JSON.parse(content);
+      } catch {
+        return { error: "mode=patch requires content to be JSON: { find, replace }" };
+      }
+      const existing = await Bun.file(path).text();
+      if (!existing.includes(patchArgs.find)) {
+        return { error: `Patch target not found in file: "${patchArgs.find}"` };
+      }
+      await Bun.write(path, existing.replace(patchArgs.find, patchArgs.replace));
+    } else {
+      // overwrite (default)
+      await Bun.write(path, content);
+    }
+
+    const stat = statSync(path);
+    return { path, mode, size: stat.size, success: true };
   } catch (err: any) {
     return { error: err.message };
   }
@@ -138,6 +226,8 @@ const staticHandlers: Record<string, (args: any) => Promise<ToolResult>> = {
   bun_search: bunSearch,
   firecrawl_search: firecrawlSearch,
   read_file: readFile,
+  list_files: listFiles,
+  write_file: writeFile,
   scrape_url: scrapeUrl,
   create_tool: createToolHandler,
 };

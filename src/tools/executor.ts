@@ -89,6 +89,7 @@ export async function handleToolCalls(
 
   const interactiveCalls = functionCalls.filter((c: any) => {
     if (c.name === "create_tool") return true;
+    if (c.name === "write_file") return true;       // always require approval
     if (c.name === "terminal_execute") return !isAutoApproved(c);
     return false;
   });
