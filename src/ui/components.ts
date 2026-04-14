@@ -215,11 +215,34 @@ export function printObservation(name: string, result: any): void {
     ];
     footer = `Scraped ${content.length} characters`;
   } else if (name === "read_file") {
-    lines = [`${DIM}${result.content?.slice(0, 300) || "Empty file"}...${RESET}`];
+    const contentSnippet = result.content?.slice(0, 500) || "Empty file";
+    lines = [
+      `${BOLD}File:${RESET} ${DIM}${result.path}${RESET}`,
+      `${BOLD}Size:${RESET} ${DIM}${(result.size / 1024).toFixed(1)} KB${RESET}`,
+      "",
+      ...contentSnippet.split("\n").slice(0, 15).map(l => `${DIM}${l.slice(0, 120)}${RESET}`),
+      ...(contentSnippet.split("\n").length > 15 || result.content?.length > 500 ? [`${DIM}... (content truncated)${RESET}`] : [])
+    ];
     footer = `Read from local disk`;
+  } else if (name === "list_files") {
+    const entries = result.entries || [];
+    lines = [
+      `${BOLD}Path:${RESET} ${DIM}${result.path}${RESET}`,
+      `${BOLD}Contents:${RESET}`,
+      ...entries.slice(0, 15).map((e: string) => `${DIM}  - ${e}${RESET}`),
+      ...(entries.length > 15 ? [`${DIM}  ... and ${entries.length - 15} more${RESET}`] : [])
+    ];
+    footer = `Found ${result.count} entries`;
+  } else if (name === "write_file") {
+    lines = [
+      `${BOLD}File:${RESET} ${DIM}${result.path}${RESET}`,
+      `${BOLD}Mode:${RESET} ${DIM}${result.mode}${RESET}`,
+      `${BOLD}Status:${RESET} ${EMERALD}Success${RESET} (${(result.size / 1024).toFixed(1)} KB wrote)`,
+    ];
+    footer = `Disk write complete`;
   } else if (name === "terminal_execute") {
     const output = result.output || result.error || "(No output)";
-    lines = output.split("\n").slice(0, 10).map((l: string) => `${DIM}${l.slice(0, 100)}${RESET}`);
+    lines = output.split("\n").slice(0, 10).map((l: string) => `${DIM}${l.slice(0, 120)}${RESET}`);
     footer = output.split("\n").length > 10 ? `... and ${output.split("\n").length - 10} more lines` : undefined;
   } else {
     lines = [`${DIM}${JSON.stringify(result).slice(0, 300)}${RESET}`];
