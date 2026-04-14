@@ -72,4 +72,4 @@ When running in REPL mode, you can use the following commands to control the ses
 
 ## Search Engines
 
-By default, the AI is instructed to utilize `bun_search` for factual web queries, which depends on [https://github.com/TekiZaki/bun-search](https://github.com/TekiZaki/bun-search) being accessible in your environment. You can also explicitly trigger Google Search Grounding by prepending `!google` to your prompt, or Firecrawl for markdown-based deep crawling by prepending `!firecrawl`.
+By default, the AI is instructed to utilize `bun_search` for factual web queries, which depends on [bun-search](https://github.com/TekiZaki/bun-search) being accessible in your environment. You can also explicitly trigger Google Search Grounding by prepending `!google` to your prompt, or Firecrawl for markdown-based deep crawling by prepending `!firecrawl`.
